@@ -48,7 +48,7 @@ def serve_index():
 # API
 @app.route('/api/services',  methods=['GET'])
 def get_services():
-    with sqlite3.connect('database/nav.db')  as conn:
+    with sqlite3.connect('db/nav.db')  as conn:
         conn.row_factory  = sqlite3.Row 
         c = conn.cursor() 
         services = c.execute(''' 
@@ -62,7 +62,7 @@ def add_service():
     if not session.get('authenticated'): 
         abort(403)
     data = request.get_json() 
-    with sqlite3.connect('database/nav.db')  as conn:
+    with sqlite3.connect('db/nav.db')  as conn:
         c = conn.cursor() 
         # 获取当前最大排序值 
         max_order = c.execute('SELECT  MAX(sort_order) FROM services').fetchone()[0] or 0 
@@ -83,7 +83,7 @@ def add_service():
 def delete_service(service_id):
     if not session.get('authenticated'): 
         abort(403)
-    with sqlite3.connect('database/nav.db')  as conn:
+    with sqlite3.connect('db/nav.db')  as conn:
         c = conn.cursor() 
         # 先获取被删项目的排序值 
         deleted_order = c.execute('SELECT  sort_order FROM services WHERE id = ?', 
@@ -101,7 +101,7 @@ def reorder_services():
     if not session.get('authenticated'): 
         abort(403)
     new_order = request.get_json() 
-    with sqlite3.connect('database/nav.db')  as conn:
+    with sqlite3.connect('db/nav.db')  as conn:
         c = conn.cursor() 
         for index, service_id in enumerate(new_order, start=1):
             c.execute('UPDATE  services SET sort_order = ? WHERE id = ?',
@@ -159,10 +159,11 @@ def admin_logout():
     session.pop('authenticated',  None)
     return redirect('/')
 
-# 初始化数据库命令行指令 
+# 初始化数据库
 @app.cli.command('init-db') 
 def init_db():
-    with sqlite3.connect('database/nav.db')  as conn:
+    os.makedirs('db', exist_ok=True)
+    with sqlite3.connect('db/nav.db')  as conn:
         c = conn.cursor() 
         # 服务项目表 
         c.execute('''CREATE  TABLE IF NOT EXISTS services 
@@ -183,7 +184,7 @@ def init_db():
                     password_hash TEXT NOT NULL)''')
             
         # 初始化默认密码（示例密码123456）
-        if not c.execute("SELECT  * FROM auth").fetchone():
+        if not c.execute("SELECT * FROM auth").fetchone():
             default_hash = generate_password_hash("admin")
             c.execute("INSERT  INTO auth (password_hash) VALUES (?)", (default_hash,))
         conn.commit()
