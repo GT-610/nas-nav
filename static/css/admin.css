@@ -24,9 +24,17 @@
     margin: 0.5rem 0;
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: 
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.2s ease;
     cursor: move;
     position: relative;
+    
+}
+
+.sortable-drag {
+    opacity: 0.5;
+    transform: scale(0.95);
 }
 
 /* 拖动手柄样式 */

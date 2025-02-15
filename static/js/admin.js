@@ -31,7 +31,7 @@ async function secureFetch(url, options = {}) {
     });
 }
 
-// static/js/admin.js  
+
 document.addEventListener('DOMContentLoaded',  async () => {
     // 加载服务列表 
     const loadServices = async () => {
@@ -57,7 +57,10 @@ document.addEventListener('DOMContentLoaded',  async () => {
         // 初始化拖拽排序 
         new Sortable(list, {
             animation: 150,
+            easing: "cubic-bezier(0.4, 0, 0.2, 1)",
             ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen', 
+            dragClass: 'sortable-drag',
             onEnd: async (evt) => {
                 const newOrder = [...list.children].map(li  => parseInt(li.dataset.id)); 
                 await fetch('/api/services/reorder', {
