@@ -1,0 +1,39 @@
+:root {
+    --primary-color: #1976D2;
+    --secondary-color: #26A69A;
+}
+/* static/css/admin.css  */
+.sortable-list {
+    min-height: 100px;
+    border: 2px dashed var(--primary-color);
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+ 
+.sortable-item {
+    background: white;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: move;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+ 
+.sortable-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+ 
+.sortable-ghost {
+    opacity: 0.6;
+    background: #f8f9fa;
+}
+ 
+.delete-btn {
+    transition: color 0.2s;
+}
+ 
+.delete-btn:hover {
+    color: #dc3545 !important;
+}

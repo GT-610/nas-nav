@@ -1,0 +1,68 @@
+<!-- static/html/admin.html  安全增强 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/admin.css"> 
+    <script src="/static/js/admin.js"  defer></script>
+</head>
+<body>
+    <div id="security-layer">
+        <div class="crypto-box">
+            <input type="password" id="sessionKey" 
+                   placeholder="输入当前会话密码进行敏感操作">
+            <button onclick="validateSession()">验证</button>
+        </div>
+        <!-- 管理界面内容 -->
+        <div class="admin-container mt-4" style="display:none;">
+            <!-- 添加服务表单 -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5>添加新服务</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addForm" class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="name" 
+                                   placeholder="服务名称" required>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="url" class="form-control" name="url"
+                                   placeholder="URL (必须包含http://或https://)" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-plus-lg"></i> 添加 
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="category">
+                                <option value="常用">常用</option>
+                                <option value="开发">开发</option>
+                                <option value="媒体">媒体</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="url" class="form-control" name="icon"
+                                   placeholder="图标URL (可选)">
+                        </div>
+                    </form>
+                </div>
+            </div>
+     
+            <!-- 服务列表管理 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5>服务排序管理</h5>
+                    <small class="fst-italic">拖动项目进行排序</small>
+                </div>
+                <div class="card-body">
+                    <ul id="serviceList" class="list-group sortable-list">
+                        <!-- 动态加载服务项 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
