@@ -36,14 +36,14 @@ function renderCards(services) {
                         <h5 class="mb-3">${service.name}</h5> 
                         ${service.description ? `<p class="text-muted small mb-3">${service.description}</p>` : ''}
                         <div class="d-grid gap-2">
-                            <a href="${service.ip_url}"  
-                               class="btn btn-ip" 
-                               target="_blank"
-                               title="内网地址">内网访问</a>
                             <a href="${service.domain_url}"  
                                class="btn btn-link" 
                                target="_blank"
                                title="域名访问">域名访问</a>
+                            <a href="${service.ip_url}"  
+                               class="btn btn-ip" 
+                               target="_blank"
+                               title="内网地址">内网访问</a>
                         </div>
                     </div>
                 </div>

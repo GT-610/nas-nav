@@ -35,8 +35,8 @@ class Service(db.Model):
             'id': self.id, 
             'name': self.name, 
             'category': self.category, 
+            'domain_url': self.domain_url,
             'ip_url': self.ip_url, 
-            'domain_url': self.domain_url, 
             'description': self.description  
         }
 
@@ -52,9 +52,10 @@ def get_services():
         conn.row_factory  = sqlite3.Row 
         c = conn.cursor() 
         services = c.execute(''' 
-            SELECT id, name, url, category, icon, sort_order 
+            SELECT id, name, domain_url, ip_url, category, icon, sort_order 
             FROM services ORDER BY sort_order 
         ''').fetchall()
+        print([dict(s) for s in services])
         return jsonify([dict(s) for s in services])
  
 @app.route('/api/services/add',  methods=['POST'])
@@ -67,11 +68,12 @@ def add_service():
         # 获取当前最大排序值 
         max_order = c.execute('SELECT  MAX(sort_order) FROM services').fetchone()[0] or 0 
         c.execute(''' 
-            INSERT INTO services (name, url, category, icon, sort_order)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO services (name, domain_url, ip_url, category, icon, id)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             data['name'],
-            data['url'],
+            data['domain_url'],
+            data['ip_url'],
             data['category'],
             data.get('icon',  ''),
             max_order + 1 
@@ -166,13 +168,17 @@ def init_db():
     with sqlite3.connect('db/nav.db')  as conn:
         c = conn.cursor() 
         # 服务项目表 
-        c.execute('''CREATE  TABLE IF NOT EXISTS services 
-                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                     name TEXT NOT NULL UNIQUE,
-                     url TEXT NOT NULL,
-                     category TEXT DEFAULT '其他',
-                     icon TEXT,
-                     sort_order INTEGER DEFAULT 999)''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                domain_url TEXT,  -- 新增域名URL字段
+                ip_url TEXT,      -- 新增IP地址URL字段
+                category TEXT DEFAULT '其他',
+                icon TEXT,
+                sort_order INTEGER DEFAULT 999
+            )
+        ''')
         conn.commit() 
     print("服务初始化完成")
 
