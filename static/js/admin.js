@@ -39,20 +39,21 @@ document.addEventListener('DOMContentLoaded',  async () => {
         const services = await res.json(); 
         const list = document.getElementById('serviceList'); 
         
-        list.innerHTML  = services.map(s  => `
-            <li class="list-group-item sortable-item d-flex justify-content-between align-items-center" 
-                data-id="${s.id}"> 
-                <div class="flex-grow-1">
-                    <span class="badge bg-primary me-2">#${s.sort_order}</span> 
-                    ${s.name}  
-                    <small class="text-muted ms-2">${s.category}</small> 
-                </div>
-                <button class="btn btn-link delete-btn text-danger" 
-                        onclick="deleteService(${s.id})"> 
-                    <i class="bi bi-trash"></i>
-                </button>
-            </li>
-        `).join('');
+        // 按 sort_order 排序
+        services.sort((a, b) => a.sort_order - b.sort_order);
+
+        // 使用模板渲染服务项
+        const template = document.getElementById('serviceItemTemplate').content;
+        list.innerHTML = ''; // 清空列表
+        services.forEach(service => {
+            const clone = template.cloneNode(true);
+            clone.querySelector('[data-id]').setAttribute('data-id', service.id);
+            clone.querySelector('.badge').textContent = `#${service.sort_order}`;
+            clone.querySelector('.service-name').textContent = service.name;
+            clone.querySelector('.service-category').textContent = service.category;
+            clone.querySelector('.delete-btn').setAttribute('onclick', `deleteService(${service.id})`);
+            list.appendChild(clone);
+        });
  
         // 初始化拖拽排序 
         new Sortable(list, {
