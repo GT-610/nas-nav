@@ -3,24 +3,6 @@
     --secondary-color: #26A69A;
 }
 
-body {
-    background: #f5f5f5;
-    min-height: 100vh;
-}
-
-.nav-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-    height: 100%;
-}
-
-.nav-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
 .btn-ip {
     background: var(--primary-color);
     color: white !important;
@@ -33,7 +15,6 @@ body {
 
 .search-box {
     max-width: 500px;
-    margin: 20px auto;
 }
 
 .category-badge {
