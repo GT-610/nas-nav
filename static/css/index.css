@@ -3,11 +3,6 @@
     --secondary-color: #26A69A;
 }
 
-body {
-    background: #f5f5f5;
-    min-height: 100vh;
-}
-
 .nav-card {
     background: white;
     border-radius: 8px;
@@ -23,17 +18,16 @@ body {
 
 .btn-ip {
     background: var(--primary-color);
-    color: white !important;
+    color: white;
 }
 
 .btn-link {
     background: var(--secondary-color);
-    color: white !important;
+    color: white;
 }
 
 .search-box {
     max-width: 500px;
-    margin: 20px auto;
 }
 
 .category-badge {
