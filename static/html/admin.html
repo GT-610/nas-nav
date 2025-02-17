@@ -6,7 +6,8 @@
     <title>NAS 导航后台管理界面</title>
     <link rel="stylesheet" href="/static/css/admin.css">
     <link rel="stylesheet" href="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdb-ui-kit/3.10.2/mdb.min.css">
-    <link rel="stylesheet" href="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap-icons/1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet"
+        href="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap-icons/1.8.1/font/bootstrap-icons.css">
     <script src="/static/js/admin.js" defer></script>
     <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdb-ui-kit/3.10.2/mdb.min.js"></script>
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/Sortable/1.14.0/Sortable.min.js"></script>
@@ -53,19 +54,35 @@
                 </form>
             </div>
 
-        <!-- 服务列表管理 -->
-        <div class="card">
-            <div class="card-header bg-secondary text-white">
-                <h5>服务排序管理</h5>
-                <small class="fst-italic">拖动项目进行排序</small>
-                <div class="card-body">
-                    <ul id="serviceList" class="list-group sortable-list">
-                        <!-- 动态加载服务项 -->
-                    </ul>
+            <!-- 服务列表管理 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5>服务排序管理</h5>
+                    <small class="fst-italic">拖动项目进行排序</small>
+                    <div class="card-body">
+                        <ul id="serviceList" class="list-group sortable-list">
+                            <!-- 动态加载服务项 -->
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        <template id="serviceItemTemplate">
+            <li class="list-group-item sortable-item d-flex justify-content-between align-items-center" 
+                data-id="placeholder">
+                <div class="flex-grow-1">
+                    <span class="badge bg-primary me-2">#placeholder</span> 
+                    <span class="service-name">placeholder</span>  
+                    <small class="text-muted ms-2 service-category">placeholder</small> 
+                </div>
+                <button class="btn btn-link edit-btn text-primary" data-id="placeholder"> 
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link delete-btn text-danger" data-id="placeholder"> 
+                    <i class="bi bi-trash"></i>
+                </button>
+            </li>
+        </template>
     </div>
 </body>
 
