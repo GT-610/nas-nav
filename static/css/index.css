@@ -3,14 +3,27 @@
     --secondary-color: #26A69A;
 }
 
+.nav-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    height: 100%;
+}
+
+.nav-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 .btn-ip {
     background: var(--primary-color);
-    color: white !important;
+    color: white;
 }
 
 .btn-link {
     background: var(--secondary-color);
-    color: white !important;
+    color: white;
 }
 
 .search-box {
