@@ -67,15 +67,14 @@ def add_service():
         # 获取当前最大排序值 
         max_order = c.execute('SELECT  MAX(sort_order) FROM services').fetchone()[0] or 0 
         c.execute(''' 
-            INSERT INTO services (name, domain_url, ip_url, category, icon, id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO services (name, domain_url, ip_url, category, icon)
+            VALUES (?, ?, ?, ?, ?)
         ''', (
             data['name'],
             data['domain_url'],
             data['ip_url'],
             data['category'],
             data.get('icon',  ''),
-            max_order + 1 
         ))
         conn.commit() 
         return jsonify({'id': c.lastrowid}) 
@@ -117,15 +116,7 @@ auth = HTTPTokenAuth(scheme='Bearer')
  
 @auth.verify_token  
 def verify_token(token):
-    return token == os.getenv('ADMIN_TOKEN') 
- 
-@app.route('/api/services/<int:id>',  methods=['DELETE'], endpoint='delete_service_endpoint')  # 添加endpoint参数
-@auth.login_required  
-def delete_service(id):
-    service = Service.query.get_or_404(id) 
-    db.session.delete(service) 
-    db.session.commit() 
-    return '', 204 
+    return token == os.getenv('ADMIN_TOKEN')
 
 from flask import session, redirect 
  

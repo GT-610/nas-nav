@@ -48,11 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         services.forEach(service => {
             const clone = template.cloneNode(true);
             clone.querySelector('[data-id]').setAttribute('data-id', service.id);
-            clone.querySelector('.badge').textContent = `#${service.sort_order}`;
+            clone.querySelector('.badge').textContent = `#${service.id}`;
             clone.querySelector('.service-name').textContent = service.name;
             clone.querySelector('.service-category').textContent = service.category;
             clone.querySelector('.delete-btn').setAttribute('onclick', `deleteService(${service.id})`);
-        
+
             // 绑定编辑按钮点击事件
             const editBtn = clone.querySelector('.edit-btn');
             if (editBtn) {
@@ -65,10 +65,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('editDomainUrl').value = service.domain_url;
 
                     // 打开模态框
-                    mdb.Modal.getInstance(document.getElementById('editModal')).show();
+                    var editModal = new mdb.Modal(document.getElementById('editModal'));
+                    editModal.show();
+
+                    // 提交数据
+                    // document.getElementById('editForm').querySelector('.btn-primary').addEventListener('click', async () => {
+                    // });
+
+                    // 关闭模态框
+                    document.getElementById('editForm').querySelector('.btn-secondary').addEventListener('click', () => {
+                        editModal.hide();
+                    });
                 });
             }
-        
+
+
+
             list.appendChild(clone);
         });
 
@@ -123,27 +135,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             domain_url: document.getElementById('editDomainUrl').value
         };
 
-        try {
-            const response = await secureFetch('/api/services/update', {
-                method: 'PUT',
-                body: editData
-            });
+        const response = await secureFetch('/api/services/update', {
+            method: 'PUT',
+            body: editData
+        });
 
-            if (response.ok) {
-                // 关闭模态框并刷新列表
-                bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-                await loadServices();
-            } else {
-                alert('更新失败，请检查数据格式');
-            }
-        } catch (error) {
-            console.error('更新错误:', error);
+        if (response.ok) {
+            // 关闭模态框并刷新列表
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            await loadServices();
+        } else {
+            alert('更新失败，请检查数据格式');
         }
     });
 
     // 初始化加载 
     await loadServices();
-    document.querySelector('.admin-container').style.display = 'block';
 });
 
 // 删除服务函数 
