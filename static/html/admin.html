@@ -76,14 +76,61 @@
                         <span class="service-name">${name}</span>  
                         <small class="text-muted ms-2 service-category">${category}</small> 
                     </div>
-                    <button class="btn btn-link delete-btn text-danger" data-id="placeholder"> 
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div>
+                        <button class="btn btn-link edit-btn text-primary me-2" data-bs-toggle="modal" data-bs-target="#editModal">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>            
+                        <button class="btn btn-link delete-btn text-danger" data-id="placeholder"> 
+                            <i class="bi bi-trash"></i>
+                        </button>                        
+                    </div>
                 </li>
             </template>
         </div>
     </div>
     </div>
 </body>
+
+<!-- 在body底部添加模态框 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑服务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editId">
+                    <div class="mb-3">
+                        <label class="form-label">服务名称</label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">分类</label>
+                        <select class="form-select" id="editCategory">
+                            <option value="常用">常用</option>
+                            <option value="开发">开发</option>
+                            <option value="媒体">媒体</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">IP地址URL</label>
+                        <input type="url" class="form-control" id="editIpUrl" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">域名URL</label>
+                        <input type="url" class="form-control" id="editDomainUrl" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 </html>

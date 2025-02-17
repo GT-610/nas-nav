@@ -55,7 +55,6 @@ def get_services():
             SELECT id, name, domain_url, ip_url, category, icon, sort_order 
             FROM services ORDER BY sort_order 
         ''').fetchall()
-        print([dict(s) for s in services])
         return jsonify([dict(s) for s in services])
  
 @app.route('/api/services/add',  methods=['POST'])

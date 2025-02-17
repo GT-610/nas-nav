@@ -66,6 +66,16 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* 按钮样式 */
+.edit-btn, .delete-btn {
+    padding: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+    opacity: 0.7;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .sortable-item {
