@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('editDomainUrl').value = service.domain_url;
 
                     // 打开模态框
-                    bootstrap.Modal.getInstance(document.getElementById('editModal')).show();
+                    mdb.Modal.getInstance(document.getElementById('editModal')).show();
                 });
             }
         
