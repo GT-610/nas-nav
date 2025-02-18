@@ -14,7 +14,21 @@
 </head>
 
 <body>
-    <div id="security-layer">
+    <!-- 在security-layer容器顶部添加 -->
+    <div class="container mt-4">
+        <div id="loginForm" class="card" style="max-width: 400px; margin: 0 auto;">
+            <div class="card-body">
+                <h5 class="card-title">管理员登录</h5>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="password" placeholder="请输入管理员密码" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">登录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="managementContent" style="display: none;">
         <!-- 管理界面内容 -->
         <nav class="navbar bg-danger">
             <div class="container">
