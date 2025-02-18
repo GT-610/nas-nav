@@ -144,9 +144,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (response.ok) {
             // 关闭模态框并刷新列表
             mdb.Modal.getInstance(document.getElementById('editModal')).hide();
+            // 成功提示逻辑
+            const alertEl = document.getElementById('successAlert');
+            alertEl.style.display = 'block';
+            alertEl.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertEl.classList.remove('show');
+                setTimeout(() => alertEl.style.display = 'none', 150);
+            }, 3000);
+
             await loadServices();
         } else {
-            alert('更新失败，请检查数据格式');
+            // 失败提示逻辑
+            const alertEl = document.getElementById('failAlert');
+            alertEl.style.display = 'block';
+            alertEl.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertEl.classList.remove('show');
+                setTimeout(() => alertEl.style.display = 'none', 150);
+            }, 3000);
         }
     });
 
