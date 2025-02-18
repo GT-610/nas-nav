@@ -135,14 +135,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             domain_url: document.getElementById('editDomainUrl').value
         };
 
-        const response = await secureFetch('/api/services/update', {
+        const response = await fetch('/api/services/update', {
             method: 'PUT',
-            body: editData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(editData)
         });
 
         if (response.ok) {
             // 关闭模态框并刷新列表
-            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            mdb.Modal.getInstance(document.getElementById('editModal')).hide();
             await loadServices();
         } else {
             alert('更新失败，请检查数据格式');

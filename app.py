@@ -78,7 +78,31 @@ def add_service():
         ))
         conn.commit() 
         return jsonify({'id': c.lastrowid}) 
- 
+
+@app.route('/api/services/update', methods=['PUT'])
+def update_service():
+    if not session.get('authenticated'):
+        abort(403)
+    data = request.get_json()
+    with sqlite3.connect('db/nav.db') as conn:
+        c = conn.cursor()
+        c.execute('''
+            UPDATE services SET 
+                name = ?,
+                category = ?,
+                ip_url = ?,
+                domain_url = ?
+            WHERE id = ?
+        ''', (
+            data['name'],
+            data['category'],
+            data['ip_url'],
+            data['domain_url'],
+            data['id']
+        ))
+        conn.commit()
+    return jsonify({'success': True})
+
 @app.route('/api/services/delete/<int:service_id>',  methods=['DELETE'])
 def delete_service(service_id):
     if not session.get('authenticated'): 
