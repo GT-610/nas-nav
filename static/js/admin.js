@@ -1,9 +1,16 @@
 // 检查当前认证状态
 const checkAuth = async () => {
-    const res = await fetch('/admin/login', { method: 'GET' });
-    if (!res.ok) {
-        document.getElementById('managementContent').style.display = 'none';
-        document.getElementById('loginForm').style.display = 'block';
+    try {
+        const res = await fetch('/api/services', { method: 'HEAD' });
+        if (!res.ok) {
+            document.getElementById('managementContent').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        } else {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('managementContent').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('认证检查失败:', error);
     }
 };
 
@@ -21,7 +28,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (response.ok) {
         document.getElementById('loginForm').remove(); // 移除登录表单
         document.getElementById('managementContent').style.display = 'block'; // 显示管理内容
-        sessionStorage.clear(); // 清除临时存储
     } else {
         alert('登录失败，请检查密码');
     }
@@ -62,6 +68,7 @@ async function secureFetch(url, options = {}) {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuth();
     // 加载服务列表 
     const loadServices = async () => {
         const res = await fetch('/api/services');

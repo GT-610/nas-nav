@@ -190,8 +190,7 @@ def admin_redirect():
     """后台管理入口"""
     if not session.get('authenticated'):
         return send_from_directory(app.static_folder, 'html/admin.html')
-    return redirect('/admin.html')
-
+    return send_from_directory(app.static_folder, 'html/admin.html')
 @app.route('/admin/login',  methods=['POST'])
 def admin_login():
     """管理员登录"""
@@ -213,6 +212,7 @@ def admin_login():
 @app.route('/admin/logout',  methods=['POST'])
 def admin_logout():
     """管理员登出"""
+    session.clear()  # 清除所有会话数据
     session.pop('authenticated',  None)
     return jsonify(success=True)
  
