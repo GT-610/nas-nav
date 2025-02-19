@@ -1,7 +1,10 @@
 // 检查当前认证状态
 const checkAuth = async () => {
     try {
-        const res = await fetch('/api/services', { method: 'HEAD' });
+        const res = await fetch('/api/services/reorder', { 
+            method: 'HEAD',
+            credentials: 'include' // 确保携带cookie
+        });
         if (!res.ok) {
             document.getElementById('managementContent').style.display = 'none';
             document.getElementById('loginForm').style.display = 'block';

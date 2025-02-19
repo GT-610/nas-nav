@@ -80,11 +80,32 @@ def validate_password_complexity(password):
 def serve_index():
     """主页面路由"""
     return send_from_directory(app.static_folder,  'html/index.html') 
- 
-# ---------------------------- 服务管理API ----------------------------
+
+# ---------------------------- 公共API ----------------------------
+# 公开只读端点
+@app.route('/api/public/services', methods=['GET'])
+def public_get_services():
+    """公开获取服务数据（无需认证）"""
+    try:
+        services = Service.query.order_by(Service.sort_order).all() 
+        return jsonify([{
+            'name': s.name,
+            'category': s.category,
+            'url': s.url,
+            'url_type': s.url_type,
+            'description': s.description,
+            'icon': s.icon
+        } for s in services])
+    except SQLAlchemyError as e:
+        app.logger.error(f"数据库查询失败: {str(e)}")
+        abort(500)
+
+# ---------------------------- 管理API ----------------------------
 @app.route('/api/services',  methods=['GET'])
 def get_services():
     """获取所有服务"""
+    if not session.get('authenticated'):
+        abort(403)
     try:
         services = Service.query.order_by(Service.sort_order).all() 
         return jsonify([s.to_dict() for s in services])
