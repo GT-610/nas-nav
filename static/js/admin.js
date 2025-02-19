@@ -1,19 +1,15 @@
 // 检查当前认证状态
 const checkAuth = async () => {
     try {
-        const res = await fetch('/api/services/reorder', {
+        // 改用更可靠的服务列表端点检测 
+        const res = await fetch('/api/services', {
             method: 'HEAD',
-            credentials: 'include' // 确保携带cookie
+            credentials: 'include'
         });
-        if (!res.ok) {
-            document.getElementById('managementContent').style.display = 'none';
-            document.getElementById('loginContainer').style.display = 'block';
-        } else {
-            document.getElementById('loginContainer').style.display = 'none';
-            document.getElementById('managementContent').style.display = 'block';
-        }
+        document.getElementById('managementContent').style.display  = res.ok  ? 'block' : 'none';
+        document.getElementById('loginContainer').style.display  = res.ok  ? 'none' : 'block';
     } catch (error) {
-        console.error('认证检查失败:', error);
+        console.error(' 认证检查失败:', error);
     }
 };
 
@@ -31,6 +27,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (response.ok) {
         document.getElementById('loginContainer').remove(); // 移除登录表单
         document.getElementById('managementContent').style.display = 'block'; // 显示管理内容
+        await loadServices(); // 登录后刷新列表 
     } else {
         alert('登录失败，请检查密码');
     }
@@ -142,13 +139,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    // 表单提交处理 
+    // 添加服务 
     document.getElementById('addForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        const res = await fetch('/api/services/add', {
+        const res = await fetch('/api/services', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

@@ -49,8 +49,8 @@ class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
     category = db.Column(db.String(50), server_default='其他')
-    url_type = db.Column(db.Enum('domain', 'ip', name='url_types'), nullable=False)
-    url = db.Column(db.String(200), nullable=False)
+    ip_url = db.Column(db.String(200))  # 新增IP地址字段
+    domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
     description = db.Column(db.String(200))
     icon = db.Column(db.String(200))
     sort_order = db.Column(db.Integer, server_default='999')
@@ -91,8 +91,8 @@ def public_get_services():
         return jsonify([{
             'name': s.name,
             'category': s.category,
-            'url': s.url,
-            'url_type': s.url_type,
+            'ip_url': s.ip_url,   # 新增字段
+            'domain_url': s.domain_url,   # 替换原url字段
             'description': s.description,
             'icon': s.icon
         } for s in services])
@@ -125,8 +125,8 @@ def add_service():
         
         service = Service(
             name=data['name'],
-            url=data['url'],
-            url_type=data['url_type'],
+            ip_url=data['ip_url'],
+            domain_url=data['domain_url'],
             category=data.get('category',  '其他'),
             description=data.get('description'), 
             icon=data.get('icon',  ''),
@@ -154,8 +154,8 @@ def update_service(service_id):
         data = request.get_json() 
         
         service.name  = data.get('name',  service.name) 
-        service.url  = data.get('url',  service.url) 
-        service.url_type  = data.get('url_type',  service.url_type) 
+        service.ip_url  = data.get('ip_url',  service.ip_url)   # 新增字段
+        service.domain_url  = data.get('domain_url',  service.domain_url)   # 替换原字段 
         service.category  = data.get('category',  service.category) 
         service.description  = data.get('description',  service.description) 
         service.icon  = data.get('icon',  service.icon) 
