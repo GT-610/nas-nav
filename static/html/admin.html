@@ -14,18 +14,15 @@
 </head>
 
 <body>
-    <!-- 在security-layer容器顶部添加 -->
-    <div class="container mt-4">
-        <div id="loginForm" class="card" style="max-width: 400px; margin: 0 auto;">
-            <div class="card-body">
-                <h5 class="card-title">管理员登录</h5>
-                <form id="loginForm">
-                    <div class="mb-3">
-                        <input type="password" class="form-control" id="password" placeholder="请输入管理员密码" required>
-                    </div>
-                    <button type="submit" class="btn btn-danger w-100">登录</button>
-                </form>
-            </div>
+    <div id="loginForm" class="card" style="max-width: 400px; margin: 0 auto;">
+        <div class="card-body">
+            <h5 class="card-title">管理员登录</h5>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="password" placeholder="请输入管理员密码" required>
+                </div>
+                <button type="submit" class="btn btn-danger w-100">登录</button>
+            </form>
         </div>
     </div>
     <div id="managementContent" style="display: none;">
@@ -33,6 +30,7 @@
         <nav class="navbar bg-danger">
             <div class="container">
                 <a class="navbar-brand text-white" href="#">NAS导航后台管理界面</a>
+                <a class="btn btn-light text-danger" href="#" id="changePasswordBtn">修改密码</a>
                 <a class="btn btn-light text-danger" href="/">返回主页</a>
             </div>
         </nav>
@@ -115,7 +113,7 @@
     <button type="button" class="close" data-dismiss="alert"></button>
 </div>
 
-<!-- 模态框 -->
+<!-- 编辑模态框 -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -150,6 +148,37 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="submit" class="btn btn-primary">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">修改密码</h5>
+            </div>
+            <form id="changePasswordForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">原密码</label>
+                        <input type="password" class="form-control" id="oldPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-control" id="newPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-control" id="confirmNewPassword" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success">确认</button>
                 </div>
             </form>
         </div>

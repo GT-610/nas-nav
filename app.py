@@ -69,11 +69,11 @@ class Auth(db.Model):
 def validate_password_complexity(password):
     """密码复杂度验证"""
     if len(password) < 8:
-        raise ValueError("密码长度至少8位")
+        raise ValueError("后端提示：密码长度至少8位")
     if not any(c.isupper()  for c in password):
-        raise ValueError("必须包含至少一个大写字母")
+        raise ValueError("后端提示：必须包含至少一个大写字母")
     if not any(c.isdigit()  for c in password):
-        raise ValueError("必须包含至少一个数字")
+        raise ValueError("后端提示：必须包含至少一个数字")
  
 # ---------------------------- 路由处理 ----------------------------
 @app.route('/') 
@@ -229,7 +229,37 @@ def admin_login():
         
     except KeyError:
         return jsonify(error="需要密码字段"), 400 
- 
+
+@app.route('/admin/change-password', methods=['POST'])
+def change_password():
+    """修改管理员密码"""
+    try:
+        data = request.get_json()
+        old_password = data['oldPassword']
+        new_password = data['newPassword']
+
+        # 验证当前会话是否已认证
+        if not session.get('authenticated'):
+            return jsonify(error="未授权访问"), 403
+
+        # 查询当前认证的用户
+        auth = Auth.query.first()
+        if not auth or not check_password_hash(auth.password_hash, old_password):
+            return jsonify(error="原密码错误"), 401
+
+        # 验证新密码复杂度
+        validate_password_complexity(new_password)
+
+        # 更新密码
+        auth.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        return jsonify(success=True)
+
+    except KeyError:
+        return jsonify(error="需要原密码和新密码字段"), 400
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+
 @app.route('/admin/logout',  methods=['POST'])
 def admin_logout():
     """管理员登出"""

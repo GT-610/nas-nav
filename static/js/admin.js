@@ -1,15 +1,15 @@
 // 检查当前认证状态
 const checkAuth = async () => {
     try {
-        const res = await fetch('/api/services/reorder', { 
+        const res = await fetch('/api/services/reorder', {
             method: 'HEAD',
             credentials: 'include' // 确保携带cookie
         });
         if (!res.ok) {
             document.getElementById('managementContent').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginContainer').style.display = 'block';
         } else {
-            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('managementContent').style.display = 'block';
         }
     } catch (error) {
@@ -21,10 +21,10 @@ const checkAuth = async () => {
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const password = document.getElementById('password').value;
-    
+
     const response = await fetch('/admin/login', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
     });
 
@@ -220,3 +220,71 @@ window.deleteService = async (id) => {
         document.querySelector(`[data-id="${id}"]`).remove();
     }
 };
+
+// 前端密码验证
+function validatePasswordComplexity(password) {
+    const errors = [];
+
+    if (password.length < 8) {
+        errors.push("密码长度至少8位");
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push("必须包含至少一个大写字母");
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push("必须包含至少一个数字");
+    }
+
+    if (errors.length > 0) {
+        throw new Error(errors.join("\n"));
+    }
+}
+
+// 打开修改密码模态框
+document.getElementById('changePasswordBtn').addEventListener('click', () => {
+    var changePasswordModal = new mdb.Modal(document.getElementById('changePasswordModal'));
+    changePasswordModal.show();
+});
+
+// 修改密码表单提交处理
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+    // 验证新密码复杂度
+    try {
+        validatePasswordComplexity(newPassword);
+    } catch (error) {
+        alert(error.message);
+        return;
+    }
+
+    // 验证新密码和确认新密码是否一致
+    if (newPassword !== confirmNewPassword) {
+        alert('新密码和确认新密码不一致');
+        return;
+    }
+
+    // 发送请求到后端进行密码修改
+    const response = await fetch('/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newPassword })
+    });
+
+    if (response.ok) {
+        alert('密码修改成功');
+        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+    } else {
+        const data = await response.json();
+        alert(data.error || '密码修改失败');
+    }
+
+    // 确保“取消”按钮关闭模态框
+    document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
+        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+    });
+});
