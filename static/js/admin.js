@@ -29,7 +29,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     });
 
     if (response.ok) {
-        document.getElementById('loginForm').remove(); // 移除登录表单
+        document.getElementById('loginContainer').remove(); // 移除登录表单
         document.getElementById('managementContent').style.display = 'block'; // 显示管理内容
     } else {
         alert('登录失败，请检查密码');
