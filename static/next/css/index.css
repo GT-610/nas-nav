@@ -1,0 +1,11 @@
+/* 自定义卡片高度 */
+.mdui-card { height: 280px; }
+
+/* 调整搜索框宽度 */
+#searchInput { width: 240px; }
+
+/* 激活状态的分类按钮 */
+.mdui-chip.active { 
+    background-color: var(--mdui-color-primary);
+    color: white;
+}

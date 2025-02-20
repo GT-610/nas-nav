@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAS导航中心</title>
+    <!-- MDUI CSS -->
+    <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/css/mdui.min.css">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
+
+    <!-- 导航栏 -->
+    <div class="mdui-appbar mdui-shadow-0">
+        <div class="mdui-toolbar mdui-color-theme">
+            <span class="mdui-typo-title">NAS导航</span>
+            
+            <!-- 搜索框和管理按钮 -->
+            <div class="mdui-toolbar-spacer"></div>
+            <div class="mdui-textfield" style="width: 240px;">
+                <input class="mdui-textfield-input" placeholder="搜索服务……" ="text" id="searchInput"/>
+            </div>
+            <a href="/admin" class="mdui-btn mdui-btn-raised mdui-color-white mdui-ripple" 
+               target="_blank" style="min-width: 120px;">
+                <i class="mdui-icon material-icons">admin_panel_settings</i>管理界面
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="mdui-container mdui-m-t-4">
+        <!-- 分类过滤 -->
+        <div class="mdui-m-b-4" id="categoryFilter">
+            <div class="mdui-chip-group">
+                <button class="mdui-chip mdui-color-theme active" data-category="all">
+                    <span class="mdui-chip-title">全部</span>
+                </button>
+                <button class="mdui-chip" data-category="media">
+                    <span class="mdui-chip-title">媒体</span>
+                </button>
+                <button class="mdui-chip" data-category="tools">
+                    <span class="mdui-chip-title">工具</span>
+                </button>
+                <button class="mdui-chip" data-category="system">
+                    <span class="mdui-chip-title">系统</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 导航卡片容器 -->
+        <div class="mdui-row" id="cardContainer">
+            <!-- 示例卡片 (需要动态生成) -->
+            <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
+                <div class="mdui-card mdui-hoverable">
+                    <div class="mdui-card-media">
+                        <img src="placeholder.jpg" alt="服务图标"/>
+                    </div>
+                    <div class="mdui-card-primary">
+                        <div class="mdui-card-primary-title">服务名称</div>
+                        <div class="mdui-card-primary-subtitle">服务分类</div>
+                    </div>
+                    <div class="mdui-card-actions">
+                        <a href="#" class="mdui-btn mdui-ripple mdui-color-theme">
+                            <i class="mdui-icon material-icons">launch</i>访问
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MDUI JS -->
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>
+</body>
+</html>
