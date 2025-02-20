@@ -6,8 +6,8 @@ const checkAuth = async () => {
             method: 'HEAD',
             credentials: 'include'
         });
-        document.getElementById('managementContent').style.display  = res.ok  ? 'block' : 'none';
-        document.getElementById('loginContainer').style.display  = res.ok  ? 'none' : 'block';
+        document.getElementById('managementContent').style.display = res.ok ? 'block' : 'none';
+        document.getElementById('loginContainer').style.display = res.ok ? 'none' : 'block';
     } catch (error) {
         console.error(' 认证检查失败:', error);
     }
@@ -171,10 +171,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             domain_url: document.getElementById('editDomainUrl').value
         };
 
-        const response = await fetch('/api/services/update', {
+        const response = await fetch(`/api/services/${editData.id}`, { // 匹配 app.py 的路由格式
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(editData)
+            body: JSON.stringify({
+                name: editData.name,
+                category: editData.category,
+                ip_url: editData.ip_url,
+                domain_url: editData.domain_url,
+            })
         });
 
         if (response.ok) {
@@ -213,8 +218,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 删除服务函数 
 window.deleteService = async (id) => {
     if (confirm('确定要删除这个服务吗？')) {
-        await fetch(`/api/services/delete/${id}`, { method: 'DELETE' });
-        document.querySelector(`[data-id="${id}"]`).remove();
+        try {
+            const response = await fetch(`/api/services/${id}`, { 
+                method: 'DELETE' 
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '删除失败');
+            }
+            
+            document.querySelector(`[data-id="${id}"]`).remove();
+        } catch (error) {
+            console.error('删除失败:', error);
+            alert(error.message); // 显示后端返回的具体错误信息
+            if(error.message.includes('关联')) {
+                alert('温馨提示：请先删除与该服务关联的其他数据');
+            }
+        }
     }
 };
 
@@ -279,9 +300,9 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
         const data = await response.json();
         alert(data.error || '密码修改失败');
     }
+});
 
-    // 确保“取消”按钮关闭模态框
-    document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
-        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-    });
+// 确保“取消”按钮关闭模态框
+document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
+    mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
 });

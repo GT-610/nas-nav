@@ -128,8 +128,6 @@ def add_service():
             ip_url=data['ip_url'],
             domain_url=data['domain_url'],
             category=data.get('category',  '其他'),
-            description=data.get('description'), 
-            icon=data.get('icon',  ''),
             sort_order=max_order + 1 
         )
         
@@ -154,11 +152,9 @@ def update_service(service_id):
         data = request.get_json() 
         
         service.name  = data.get('name',  service.name) 
-        service.ip_url  = data.get('ip_url',  service.ip_url)   # 新增字段
+        service.ip_url  = data.get('ip_url',  service.ip_url)
         service.domain_url  = data.get('domain_url',  service.domain_url)   # 替换原字段 
         service.category  = data.get('category',  service.category) 
-        service.description  = data.get('description',  service.description) 
-        service.icon  = data.get('icon',  service.icon) 
         
         db.session.commit() 
         return jsonify(success=True)
@@ -183,10 +179,16 @@ def delete_service(service_id):
         )
         db.session.commit() 
         return jsonify(success=True)
+    except IntegrityError as e:
+        db.session.rollback() 
+        return jsonify(error="删除失败：该服务可能被其他数据关联"), 409  # 外键约束错误
     except SQLAlchemyError as e:
         db.session.rollback() 
-        app.logger.error(f" 删除失败: {str(e)}")
-        abort(500)
+        app.logger.error(f"删除失败: {str(e)}")
+        return jsonify(error="删除失败：数据库操作异常"), 500
+    except Exception as e:
+        app.logger.error(f"未知错误: {str(e)}")
+        return jsonify(error="删除失败：服务器内部错误"), 500
  
 @app.route('/api/services/reorder',  methods=['POST'])
 def reorder_services():
