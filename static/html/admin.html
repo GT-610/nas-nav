@@ -14,11 +14,31 @@
 </head>
 
 <body>
-    <div id="security-layer">
+    <div id="loginContainer" style="display: flex; justify-content: center;">
+        <nav class="navbar bg-danger">
+            <div class="container">
+                <a class="navbar-brand text-white" href="#">NAS导航后台管理界面</a>
+                <a class="btn btn-light text-danger" href="/">返回主页</a>
+            </div>
+        </nav>
+        <div id="loginForm" class="card" style="display: grid; place-items: center;">
+            <div class="card-body">
+                <h5 class="card-title">管理员登录</h5>
+                <form id="loginFormInner">
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="password" placeholder="请输入管理员密码" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">登录</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div id="managementContent" style="display: none;">
         <!-- 管理界面内容 -->
         <nav class="navbar bg-danger">
             <div class="container">
                 <a class="navbar-brand text-white" href="#">NAS导航后台管理界面</a>
+                <a class="btn btn-light text-danger" href="#" id="changePasswordBtn">修改密码</a>
                 <a class="btn btn-light text-danger" href="/">返回主页</a>
             </div>
         </nav>
@@ -68,25 +88,40 @@
             </div>
         </div>
         <template id="serviceItemTemplate">
-            <li class="list-group-item sortable-item d-flex justify-content-between align-items-center" 
+            <li class="list-group-item sortable-item d-flex justify-content-between align-items-center"
                 data-id="placeholder">
                 <div class="flex-grow-1">
-                    <span class="badge bg-primary me-2">#placeholder</span> 
-                    <span class="service-name">placeholder</span>  
-                    <small class="text-muted ms-2 service-category">placeholder</small> 
+                    <span class="badge bg-primary me-2">#placeholder</span>
+                    <span class="service-name">placeholder</span>
+                    <small class="text-muted ms-2 service-category">placeholder</small>
                 </div>
-                <button class="btn btn-link edit-btn text-primary" data-id="placeholder"> 
+                <button class="btn btn-link edit-btn text-primary" data-id="placeholder">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-link delete-btn text-danger" data-id="placeholder"> 
+                <button class="btn btn-link delete-btn text-danger" data-id="placeholder">
                     <i class="bi bi-trash"></i>
                 </button>
             </li>
         </template>
     </div>
+
 </body>
 
-<!-- 在body底部添加模态框 -->
+<!-- 成功提示容器 -->
+<div id="successAlert" class="alert alert-success alert-dismissible fade fixed-top m-3" role="alert"
+    style="display: none; max-width: 400px; right: 0; left: auto;">
+    更新成功！
+    <button type="button" class="close" data-dismiss="alert"></button>
+</div>
+
+<!-- 失败提示容器 -->
+<div id="failAlert" class="alert alert-danger alert-dismissible fade fixed-top m-3" role="alert"
+    style="display: none; max-width: 400px; right: 0; left: auto;">
+    更新失败。
+    <button type="button" class="close" data-dismiss="alert"></button>
+</div>
+
+<!-- 编辑模态框 -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -121,6 +156,37 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="submit" class="btn btn-primary">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 修改密码模态框 -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">修改密码</h5>
+            </div>
+            <form id="changePasswordForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">原密码</label>
+                        <input type="password" class="form-control" id="oldPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-control" id="newPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-control" id="confirmNewPassword" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success">确认</button>
                 </div>
             </form>
         </div>

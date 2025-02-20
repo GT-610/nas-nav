@@ -1,7 +1,7 @@
 // 数据加载
 async function loadServices() {
     try {
-        const response = await fetch('/api/services');
+        const response = await fetch('/api/public/services');
         if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
         const services = await response.json();
         renderCards(services);

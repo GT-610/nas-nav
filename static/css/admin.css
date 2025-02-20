@@ -105,3 +105,20 @@
 .form-control, .form-select {
     margin-bottom: 0.5rem;
 }
+
+/* 提示动画 */
+.fade {
+    transition: opacity 0.15s linear;
+}
+.fade:not(.show) {
+    opacity: 0;
+}
+
+/* 定位优化 */
+.fixed-top {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

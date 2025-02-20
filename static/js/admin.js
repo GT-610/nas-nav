@@ -1,3 +1,38 @@
+// 检查当前认证状态
+const checkAuth = async () => {
+    try {
+        // 改用更可靠的服务列表端点检测 
+        const res = await fetch('/api/services', {
+            method: 'HEAD',
+            credentials: 'include'
+        });
+        document.getElementById('managementContent').style.display  = res.ok  ? 'block' : 'none';
+        document.getElementById('loginContainer').style.display  = res.ok  ? 'none' : 'block';
+    } catch (error) {
+        console.error(' 认证检查失败:', error);
+    }
+};
+
+// 登录表单提交
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('password').value;
+
+    const response = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+    });
+
+    if (response.ok) {
+        document.getElementById('loginContainer').remove(); // 移除登录表单
+        document.getElementById('managementContent').style.display = 'block'; // 显示管理内容
+        await loadServices(); // 登录后刷新列表 
+    } else {
+        alert('登录失败，请检查密码');
+    }
+});
+
 // 安全通信 
 async function secureFetch(url, options = {}) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -33,6 +68,7 @@ async function secureFetch(url, options = {}) {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await checkAuth();
     // 加载服务列表 
     const loadServices = async () => {
         const res = await fetch('/api/services');
@@ -103,13 +139,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    // 表单提交处理 
+    // 添加服务 
     document.getElementById('addForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        const res = await fetch('/api/services/add', {
+        const res = await fetch('/api/services', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -135,17 +171,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             domain_url: document.getElementById('editDomainUrl').value
         };
 
-        const response = await secureFetch('/api/services/update', {
+        const response = await fetch('/api/services/update', {
             method: 'PUT',
-            body: editData
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(editData)
         });
 
         if (response.ok) {
             // 关闭模态框并刷新列表
-            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            mdb.Modal.getInstance(document.getElementById('editModal')).hide();
+            // 成功提示逻辑
+            const alertEl = document.getElementById('successAlert');
+            alertEl.style.display = 'block';
+            alertEl.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertEl.classList.remove('show');
+                setTimeout(() => alertEl.style.display = 'none', 150);
+            }, 3000);
+
             await loadServices();
         } else {
-            alert('更新失败，请检查数据格式');
+            // 失败提示逻辑
+            const alertEl = document.getElementById('failAlert');
+            alertEl.style.display = 'block';
+            alertEl.classList.add('show');
+
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertEl.classList.remove('show');
+                setTimeout(() => alertEl.style.display = 'none', 150);
+            }, 3000);
         }
     });
 
@@ -160,3 +217,71 @@ window.deleteService = async (id) => {
         document.querySelector(`[data-id="${id}"]`).remove();
     }
 };
+
+// 前端密码验证
+function validatePasswordComplexity(password) {
+    const errors = [];
+
+    if (password.length < 8) {
+        errors.push("密码长度至少8位");
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push("必须包含至少一个大写字母");
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push("必须包含至少一个数字");
+    }
+
+    if (errors.length > 0) {
+        throw new Error(errors.join("\n"));
+    }
+}
+
+// 打开修改密码模态框
+document.getElementById('changePasswordBtn').addEventListener('click', () => {
+    var changePasswordModal = new mdb.Modal(document.getElementById('changePasswordModal'));
+    changePasswordModal.show();
+});
+
+// 修改密码表单提交处理
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+    // 验证新密码复杂度
+    try {
+        validatePasswordComplexity(newPassword);
+    } catch (error) {
+        alert(error.message);
+        return;
+    }
+
+    // 验证新密码和确认新密码是否一致
+    if (newPassword !== confirmNewPassword) {
+        alert('新密码和确认新密码不一致');
+        return;
+    }
+
+    // 发送请求到后端进行密码修改
+    const response = await fetch('/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newPassword })
+    });
+
+    if (response.ok) {
+        alert('密码修改成功');
+        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+    } else {
+        const data = await response.json();
+        alert(data.error || '密码修改失败');
+    }
+
+    // 确保“取消”按钮关闭模态框
+    document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
+        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+    });
+});
