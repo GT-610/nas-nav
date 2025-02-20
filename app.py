@@ -13,6 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate 
 from flask_cors import CORS 
 from werkzeug.security  import generate_password_hash, check_password_hash 
+from sqlalchemy.sql import text
 from sqlalchemy.exc  import IntegrityError, SQLAlchemyError 
  
 # ---------------------------- 应用初始化 ----------------------------
@@ -174,7 +175,7 @@ def delete_service(service_id):
         
         db.session.delete(service) 
         db.session.execute( 
-            'UPDATE services SET sort_order = sort_order - 1 WHERE sort_order > :order',
+            text('UPDATE services SET sort_order = sort_order - 1 WHERE sort_order > :order'),
             {'order': deleted_order}
         )
         db.session.commit() 

@@ -8,6 +8,7 @@ const checkAuth = async () => {
         });
         document.getElementById('managementContent').style.display = res.ok ? 'block' : 'none';
         document.getElementById('loginContainer').style.display = res.ok ? 'none' : 'block';
+        await loadServices();
     } catch (error) {
         console.error(' 认证检查失败:', error);
     }
