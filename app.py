@@ -13,6 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate 
 from flask_cors import CORS 
 from werkzeug.security  import generate_password_hash, check_password_hash 
+from sqlalchemy.sql import text
 from sqlalchemy.exc  import IntegrityError, SQLAlchemyError 
  
 # ---------------------------- 应用初始化 ----------------------------
@@ -27,6 +28,8 @@ class Config:
     # 安全配置 
     SECRET_KEY = secrets.token_hex(32) 
     SESSION_COOKIE_HTTPONLY = True 
+    SESSION_COOKIE_EXPIRES = 0  # 浏览器关闭时过期
+    PERMANENT_SESSION_LIFETIME = timedelta(seconds=0)  # 设置会话有效期
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=15)  # 缩短会话有效期
     
@@ -128,8 +131,6 @@ def add_service():
             ip_url=data['ip_url'],
             domain_url=data['domain_url'],
             category=data.get('category',  '其他'),
-            description=data.get('description'), 
-            icon=data.get('icon',  ''),
             sort_order=max_order + 1 
         )
         
@@ -154,11 +155,9 @@ def update_service(service_id):
         data = request.get_json() 
         
         service.name  = data.get('name',  service.name) 
-        service.ip_url  = data.get('ip_url',  service.ip_url)   # 新增字段
+        service.ip_url  = data.get('ip_url',  service.ip_url)
         service.domain_url  = data.get('domain_url',  service.domain_url)   # 替换原字段 
         service.category  = data.get('category',  service.category) 
-        service.description  = data.get('description',  service.description) 
-        service.icon  = data.get('icon',  service.icon) 
         
         db.session.commit() 
         return jsonify(success=True)
@@ -178,15 +177,21 @@ def delete_service(service_id):
         
         db.session.delete(service) 
         db.session.execute( 
-            'UPDATE services SET sort_order = sort_order - 1 WHERE sort_order > :order',
+            text('UPDATE services SET sort_order = sort_order - 1 WHERE sort_order > :order'),
             {'order': deleted_order}
         )
         db.session.commit() 
         return jsonify(success=True)
+    except IntegrityError as e:
+        db.session.rollback() 
+        return jsonify(error="删除失败：该服务可能被其他数据关联"), 409  # 外键约束错误
     except SQLAlchemyError as e:
         db.session.rollback() 
-        app.logger.error(f" 删除失败: {str(e)}")
-        abort(500)
+        app.logger.error(f"删除失败: {str(e)}")
+        return jsonify(error="删除失败：数据库操作异常"), 500
+    except Exception as e:
+        app.logger.error(f"未知错误: {str(e)}")
+        return jsonify(error="删除失败：服务器内部错误"), 500
  
 @app.route('/api/services/reorder',  methods=['POST'])
 def reorder_services():
@@ -224,7 +229,7 @@ def admin_login():
             
         session.clear() 
         session['authenticated'] = True 
-        session.permanent  = True 
+        session.permanent  = False
         return jsonify(success=True)
         
     except KeyError:

@@ -1,6 +1,6 @@
 [project]
 name = "nas-nav"
-version = "0.0.1"
+version = "0.2.0"
 description = ""
 authors = [
     {name = "GT610",email = "myddz1005@163.com"}
