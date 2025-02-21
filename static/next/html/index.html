@@ -19,21 +19,24 @@
         <div class="mdui-toolbar mdui-color-theme">
             <span class="mdui-typo-title">NAS 导航</span>
 
-            <!-- 搜索框和管理按钮 -->
+            <!-- “回到旧版”按钮 -->
             <div class="mdui-toolbar-spacer"></div>
             <a href="/" class="mdui-btn mdui-btn-raised" target="_blank" style="min-width: 120px;">
                 <i class="mdui-icon material-icons">weekend</i>回到旧版
             </a>
 
+            <!-- 搜索框 -->
             <div class="mdui-textfield mdui-textfield-expandable mdui-float-right">
                 <button class="mdui-textfield-icon mdui-btn mdui-btn-icon">
-                    <i class="mdui-icon material-icons">搜索服务</i>
+                    <i class="mdui-icon material-icons">search</i>
                 </button>
-                <input class="mdui-textfield-input" type="text" placeholder="Search" />
+                <input class="mdui-textfield-input" type="text" placeholder="搜索服务" id="searchInput" />
                 <button class="mdui-textfield-close mdui-btn mdui-btn-icon">
                     <i class="mdui-icon material-icons">close</i>
                 </button>
             </div>
+
+            <!-- 管理员登入按钮 -->
             <a href="/admin" class="mdui-btn mdui-btn-icon" target="_blank">
                 <i class="mdui-icon material-icons">admin_panel_settings</i>
             </a>

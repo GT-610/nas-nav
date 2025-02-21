@@ -38,6 +38,7 @@ function renderCards(services) {
         // 设置数据属性
         card.dataset.category = service.category.toLowerCase();
         card.dataset.search = `${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}`;
+        card.dataset.name = service.name.toLowerCase();
 
         // 填充内容
         const iconContainer = clone.querySelector('.mdui-card-media');
@@ -111,14 +112,14 @@ function handleLoadingError(error) {
             `;
 }
 
-// 事件绑定 
+// 事件绑定
 function bindFilterEvents() {
-    // MDUI 搜索输入
     document.getElementById('searchInput').addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
         document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
-            const match = card.dataset.search.includes(term);
-            card.style.display = match ? 'block' : 'none';
+            // 修改为仅匹配服务名称
+            const serviceName = card.querySelector('.card-title').textContent.toLowerCase();
+            card.style.display = serviceName.includes(term) ? 'block' : 'none';
         });
     });
 }
