@@ -69,6 +69,35 @@ async function secureFetch(url, options = {}) {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 添加页面关闭时的登出请求
+    window.addEventListener('beforeunload', async () => {
+        try {
+            await fetch('/admin/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.log('自动登出成功');
+        }
+    });
+
+    document.querySelectorAll('.logout-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch('/admin/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                window.location.href = '/';
+            } catch (error) {
+                console.error('登出失败:', error);
+                window.location.href = '/';
+            }
+        });
+    });
+
+
     await checkAuth();
     // 加载服务列表 
     const loadServices = async () => {
@@ -220,20 +249,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.deleteService = async (id) => {
     if (confirm('确定要删除这个服务吗？')) {
         try {
-            const response = await fetch(`/api/services/${id}`, { 
-                method: 'DELETE' 
+            const response = await fetch(`/api/services/${id}`, {
+                method: 'DELETE'
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || '删除失败');
             }
-            
+
             document.querySelector(`[data-id="${id}"]`).remove();
         } catch (error) {
             console.error('删除失败:', error);
             alert(error.message); // 显示后端返回的具体错误信息
-            if(error.message.includes('关联')) {
+            if (error.message.includes('关联')) {
                 alert('温馨提示：请先删除与该服务关联的其他数据');
             }
         }

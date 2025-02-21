@@ -28,6 +28,8 @@ class Config:
     # 安全配置 
     SECRET_KEY = secrets.token_hex(32) 
     SESSION_COOKIE_HTTPONLY = True 
+    SESSION_COOKIE_EXPIRES = 0  # 浏览器关闭时过期
+    PERMANENT_SESSION_LIFETIME = timedelta(seconds=0)  # 设置会话有效期
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=15)  # 缩短会话有效期
     
@@ -227,7 +229,7 @@ def admin_login():
             
         session.clear() 
         session['authenticated'] = True 
-        session.permanent  = True 
+        session.permanent  = False
         return jsonify(success=True)
         
     except KeyError:

@@ -27,40 +27,59 @@ async function checkServiceStatus() {
 // 卡片渲染函数 
 function renderCards(services) {
     const container = document.getElementById('cardContainer');
-    container.innerHTML = services.map(service => `
-        <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2"
-             data-category="${service.category.toLowerCase()}" 
-             data-search="${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}">
-            <div class="mdui-card mdui-hoverable">
-                ${service.icon_url ? `
-                <div class="mdui-card-media">
-                    <img src="${service.icon_url}" alt="${service.name}"/>
-                </div>` : ''}
-                <div class="mdui-card-primary">
-                    <div class="mdui-card-primary-title">${service.name}</div>
-                    <div class="mdui-card-primary-subtitle">${service.category}</div>
-                </div>
-                <div class="mdui-card-content">
-                    ${service.description ? `<p class="mdui-typo">${service.description}</p>` : ''}
-                </div>
-                <div class="mdui-card-actions">
-                    <a href="${service.domain_url}" 
-                       class="mdui-btn mdui-ripple mdui-color-theme"
-                       target="_blank">
-                        <i class="mdui-icon material-icons">public</i>域名访问
-                    </a>
-                    <a href="${service.ip_url}" 
-                       class="mdui-btn mdui-ripple mdui-color-theme-accent btn-ip"
-                       target="_blank">
-                        <i class="mdui-icon material-icons">lan</i>内网访问
-                    </a>
-                </div>
-            </div>
-        </div>
-    `).join('');
+    const template = document.getElementById('cardTemplate');
+    
+    container.innerHTML = ''; // 清空容器
+    
+    services.forEach(service => {
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.mdui-col');
+        
+        // 设置数据属性
+        card.dataset.category = service.category.toLowerCase();
+        card.dataset.search = `${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}`;
+
+        // 填充内容
+        const iconContainer = clone.querySelector('.mdui-card-media');
+        const iconImg = clone.querySelector('.card-icon');
+        if (service.icon_url) {
+            iconImg.src = service.icon_url;
+            iconImg.alt = service.name;
+        } else {
+            iconContainer.remove(); // 无图标时移除整个图片区域
+        }
+
+        clone.querySelector('.card-title').textContent = service.name;
+        clone.querySelector('.card-category').textContent = service.category;
+
+        const descriptionEl = clone.querySelector('.card-description');
+        if (service.description) {
+            descriptionEl.textContent = service.description;
+        } else {
+            descriptionEl.parentElement.remove(); // 无描述时移除内容区域
+        }
+
+        // 设置按钮链接
+        clone.querySelector('.domain-btn').href = service.domain_url;
+        clone.querySelector('.ip-btn').href = service.ip_url;
+
+        container.appendChild(clone);
+    });
 
     checkServiceStatus();
 }
+
+/* 在loadServices开始时添加加载状态
+async function loadServices() {
+    const container = document.getElementById('cardContainer');
+    container.innerHTML = '<div class="loading-shimmer mdui-col-xs-12">加载中...</div>'.repeat(6);
+    
+    try {
+        // ...原有逻辑...
+    } catch (error) {
+        // ...错误处理...
+    }
+}*/
 
 // 动态生成分类过滤 
 function initFilters(services) {
