@@ -119,3 +119,21 @@
   100% { background-position: 0% 50%; }
 }
   */
+
+/* 在index.css添加 */
+footer {
+  padding: 20px 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* 暗色主题适配 */
+.mdui-theme-layout-dark footer {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.octicon-mark-github {
+  transition: opacity 0.3s;
+}
+.octicon-mark-github:hover {
+  opacity: 0
+}
