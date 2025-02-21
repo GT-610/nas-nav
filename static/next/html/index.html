@@ -21,16 +21,21 @@
 
             <!-- 搜索框和管理按钮 -->
             <div class="mdui-toolbar-spacer"></div>
-            <div class="mdui-textfield" style="width: 240px;">
-                <input class="mdui-textfield-input" placeholder="搜索服务……" id="searchInput" />
-            </div>
-            <a href="/" class="mdui-btn mdui-btn-raised mdui-color-white mdui-ripple" target="_blank"
-                style="min-width: 120px;">
+            <a href="/" class="mdui-btn mdui-btn-raised" target="_blank" style="min-width: 120px;">
                 <i class="mdui-icon material-icons">weekend</i>回到旧版
             </a>
-            <a href="/admin" class="mdui-btn mdui-btn-raised mdui-color-white mdui-ripple" target="_blank"
-                style="min-width: 120px;">
-                <i class="mdui-icon material-icons">admin_panel_settings</i>管理界面
+
+            <div class="mdui-textfield mdui-textfield-expandable mdui-float-right">
+                <button class="mdui-textfield-icon mdui-btn mdui-btn-icon">
+                    <i class="mdui-icon material-icons">搜索服务</i>
+                </button>
+                <input class="mdui-textfield-input" type="text" placeholder="Search" />
+                <button class="mdui-textfield-close mdui-btn mdui-btn-icon">
+                    <i class="mdui-icon material-icons">close</i>
+                </button>
+            </div>
+            <a href="/admin" class="mdui-btn mdui-btn-icon" target="_blank">
+                <i class="mdui-icon material-icons">admin_panel_settings</i>
             </a>
         </div>
         </nav>
@@ -59,7 +64,6 @@
                 <!-- 系统分类内容 -->
             </div>
 
-            <!-- 导航卡片容器 -->
             <!-- 新增卡片模板 -->
             <template id="cardTemplate">
                 <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
@@ -75,16 +79,19 @@
                             <p class="card-description mdui-typo"></p>
                         </div>
                         <div class="mdui-card-actions">
-                            <a href="#" class="domain-btn mdui-btn mdui-ripple mdui-color-theme" target="_blank">
+                            <a href="#" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
                                 <i class="mdui-icon material-icons">public</i>域名访问
                             </a>
-                            <a href="#" class="ip-btn mdui-btn mdui-ripple mdui-color-theme-accent" target="_blank">
+                            <a href="#" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
                                 <i class="mdui-icon material-icons">lan</i>内网访问
                             </a>
                         </div>
                     </div>
                 </div>
             </template>
+
+            <!-- 导航卡片容器 -->
+            <div id="cardContainer" class="mdui-row"></div>
 
             <!-- MDUI JS -->
             <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>

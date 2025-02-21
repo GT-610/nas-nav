@@ -33,7 +33,7 @@ function renderCards(services) {
     
     services.forEach(service => {
         const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.mdui-col');
+        const card = clone.querySelector('.mdui-col-xs-12');
         
         // 设置数据属性
         card.dataset.category = service.category.toLowerCase();
