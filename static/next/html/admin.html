@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NAS 导航后台管理</title>
+    <!-- MDUI 核心样式 -->
+    <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/css/mdui.min.css">
+    <link rel="stylesheet" href="../admin.css">
+    <!-- 排序库 -->
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/Sortable/1.14.0/Sortable.min.js"></script>
+</head>
+
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
+    <!-- 顶部导航 -->
+    <div class="mdui-appbar mdui-shadow-0">
+        <div class="mdui-toolbar mdui-color-theme">
+            <span class="mdui-typo-title">NAS导航管理后台</span>
+            <div class="mdui-toolbar-spacer"></div>
+            <a href="/static/next/html/index.html" class="mdui-btn mdui-btn-icon" target="_blank">
+                <i class="mdui-icon material-icons">home</i>
+            </a>
+        </div>
+    </div>
+
+    <!-- 登录容器 -->
+    <div id="loginContainer" class="mdui-container">
+        <!-- 登录表单 -->
+        <div class="mdui-row mdui-m-t-4">
+            <div class="mdui-col-md-6 mdui-col-offset-md-3">
+                <div class="mdui-card">
+                    <div class="mdui-card-header">
+                        <h2 class="mdui-card-header-title">管理员登录</h2>
+                    </div>
+                    <form id="loginForm" class="mdui-card-content">
+                        <div class="mdui-textfield">
+                            <input class="mdui-textfield-input" type="password" id="password" required />
+                            <label class="mdui-textfield-label">请输入管理员密码</label>
+                        </div>
+                        <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent">
+                            登录
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理界面 -->
+    <div id="managementContent" style="display:none">
+
+        <!-- 新增服务表单 -->
+        <div class="mdui-container mdui-m-t-4">
+            <div class="mdui-card">
+                <form id="addForm" class="mdui-card-content mdui-p-a-4">
+                    <div class="mdui-row">
+                        <div class="mdui-col-sm-4 mdui-m-b-2">
+                </form>
+            </div>
+
+            <!-- 服务列表 -->
+            <div class="mdui-card mdui-m-t-4">
+                <div class="mdui-card-header">
+                    <h2 class="mdui-card-header-title">服务排序管理</h2>
+                    <div class="mdui-card-header-subtitle">拖动项目进行排序</div>
+                </div>
+                <ul id="serviceList" class="mdui-list sortable-list">
+                    <!-- 动态内容保持结构不变 -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="mdui-fab-wrapper" id="exampleFab">
+            <button class="mdui-fab mdui-ripple mdui-color-theme-accent">
+                <!-- 默认显示的图标 -->
+                <i class="mdui-icon material-icons">add</i>
+
+                <!-- 在拨号菜单开始打开时，平滑切换到该图标，若不需要切换图标，则可以省略该元素 -->
+                <i class="mdui-icon mdui-fab-opened material-icons">add</i>
+            </button>
+            <div class="mdui-fab-dial">
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-pink">
+                    <i class="mdui-icon material-icons">backup</i>
+                </button>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-red">
+                    <i class="mdui-icon material-icons">bookmark</i>
+                </button>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-orange">
+                    <i class="mdui-icon material-icons">access_alarms</i>
+                </button>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-blue">
+                    <i class="mdui-icon material-icons">touch_app</i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 新增服务对话框 -->
+        <div class="mdui-dialog" id="addServiceDialog">
+            <div class="mdui-dialog-content">
+                <h2 class="mdui-dialog-title">添加新服务</h2>
+                <form id="addForm" class="mdui-dialog-content mdui-p-y-2">
+                    <!-- 原有添加表单内容移动至此 -->
+                    <div class="mdui-textfield">
+                        <input class="mdui-textfield-input" type="text" name="name" required />
+                        <label class="mdui-textfield-label">服务名称</label>
+                    </div>
+                    <!-- 其他表单字段保持原样 -->
+                </form>
+                <div class="mdui-dialog-actions">
+                    <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+                    <button type="submit" form="addForm" class="mdui-btn mdui-ripple mdui-color-theme">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态对话框 -->
+    <div class="mdui-dialog" id="editDialog">
+        <div class="mdui-dialog-content">
+            <h2 class="mdui-dialog-title">编辑服务</h2>
+            <form id="editForm" class="mdui-dialog-content">
+                <!-- 表单内容 -->
+            </form>
+            <div class="mdui-dialog-actions">
+                <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+                <button type="submit" class="mdui-btn mdui-ripple mdui-color-theme">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MDUI JS -->
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+
+</html>

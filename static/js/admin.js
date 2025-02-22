@@ -97,6 +97,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // 初始化浮动按钮组件
+    const fab = new mdui.Fab('#mainFab', {
+        trigger: 'hover' // 或 'click' 根据需求
+    });
+
+    // method
+    $('#mainFab').on('click', function () {
+        fab.open();
+    });
+
+    // 初始化工具提示
+    mdui.updateTooltips();
 
     await checkAuth();
     // 加载服务列表 
@@ -130,9 +142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('editIpUrl').value = service.ip_url;
                     document.getElementById('editDomainUrl').value = service.domain_url;
 
-                    // 打开模态框
-                    var editModal = new mdb.Modal(document.getElementById('editModal'));
-                    editModal.show();
+                    // 打开对话框
+                    const editDialog = new mdui.Dialog('#editDialog')
+                    editDialog.open();
 
                     // 提交数据
                     // document.getElementById('editForm').querySelector('.btn-primary').addEventListener('click', async () => {
@@ -140,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     // 关闭模态框
                     document.getElementById('editForm').querySelector('.btn-secondary').addEventListener('click', () => {
-                        editModal.hide();
+                        editDialog.close();
                     });
                 });
             }

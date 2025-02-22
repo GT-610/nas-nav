@@ -1,11 +1,26 @@
-// 数据加载
+// 缓存常用 DOM 元素
+const domCache = {
+    container: document.getElementById('cardContainer'),
+    template: document.getElementById('cardTemplate'),
+    tabContainer: document.getElementById('categoryTab'),
+    searchInput: document.getElementById('searchInput')
+};
+
+// 加载服务列表
 async function loadServices() {
     try {
-        const response = await fetch('/api/public/services');
-        if (!response.ok) throw new Error(`HTTP错误! 状态码: ${response.status}`);
-        const services = await response.json();
+        domCache.container.innerHTML = '<div class="loading-shimmer mdui-col-xs-12">加载中...</div>'.repeat(6);
+        
+        const [servicesResponse, _] = await Promise.all([
+            fetch('/api/public/services'),
+            initFilters() // 保持并行加载
+        ]);
+        
+        if (!servicesResponse.ok) throw new Error(`HTTP错误! 状态码: ${servicesResponse.status}`);
+        
+        const services = await servicesResponse.json();
         renderCards(services);
-        initFilters(services);  // 动态生成分类过滤 
+        bindFilterEvents();
     } catch (error) {
         handleLoadingError(error);
     }
@@ -13,90 +28,121 @@ async function loadServices() {
 
 // 服务状态检测 
 async function checkServiceStatus() {
-    document.querySelectorAll('.nav-card').forEach(async  card => {
-        const ipUrl = card.querySelector('.btn-ip').href; 
-        try {
-            await fetch(ipUrl, { mode: 'no-cors' });
-            card.classList.remove('offline'); 
-        } catch {
-            card.classList.add('offline'); 
-        }
+    const cards = Array.from(document.querySelectorAll('.nav-card'));
+    const requests = cards.map(card => {
+        const ipUrl = card.querySelector('.btn-ip').href;
+        return fetch(ipUrl, { mode: 'no-cors', cache: 'no-cache' })
+            .then(() => card.classList.remove('offline'))
+            .catch(() => card.classList.add('offline'));
     });
+
+    await Promise.allSettled(requests);
 }
 
 // 卡片渲染函数 
 function renderCards(services) {
-    const container = document.getElementById('cardContainer');
-    const template = document.getElementById('cardTemplate');
-    
-    container.innerHTML = ''; // 清空容器
+    const fragment = document.createDocumentFragment();
     
     services.forEach(service => {
-        const clone = template.content.cloneNode(true);
+        const clone = domCache.template.content.cloneNode(true);
         const card = clone.querySelector('.mdui-col-xs-12');
         
-        // 设置数据属性
-        card.dataset.category = service.category.toLowerCase();
-        card.dataset.search = `${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}`;
-        card.dataset.name = service.name.toLowerCase();
+        // 数据属性设置
+        Object.assign(card.dataset, {
+            category: (service.category || '').toLowerCase(),
+            name: (service.name || '').toLowerCase(),
+            search: `${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}`
+        });
 
-        // 填充内容
+        // 图标处理
         const iconContainer = clone.querySelector('.mdui-card-media');
         const iconImg = clone.querySelector('.card-icon');
         if (service.icon_url) {
             iconImg.src = service.icon_url;
             iconImg.alt = service.name;
         } else {
-            iconContainer.remove(); // 无图标时移除整个图片区域
+            iconContainer.remove();
         }
 
+        // 内容填充
         clone.querySelector('.card-title').textContent = service.name;
         clone.querySelector('.card-category').textContent = service.category;
 
+        // 描述处理
         const descriptionEl = clone.querySelector('.card-description');
         if (service.description) {
             descriptionEl.textContent = service.description;
         } else {
-            descriptionEl.parentElement.remove(); // 无描述时移除内容区域
+            descriptionEl.parentElement?.remove();
         }
 
-        // 设置按钮链接
-        clone.querySelector('.domain-btn').href = service.domain_url;
-        clone.querySelector('.ip-btn').href = service.ip_url;
+        // 链接设置
+        const links = clone.querySelectorAll('a');
+        links[0].href = service.domain_url;
+        links[1].href = service.ip_url;
 
-        container.appendChild(clone);
+        fragment.appendChild(clone);
     });
 
+    domCache.container.innerHTML = '';
+    domCache.container.appendChild(fragment);
     checkServiceStatus();
 }
 
-/* 在loadServices开始时添加加载状态
-async function loadServices() {
-    const container = document.getElementById('cardContainer');
-    container.innerHTML = '<div class="loading-shimmer mdui-col-xs-12">加载中...</div>'.repeat(6);
-    
-    try {
-        // ...原有逻辑...
-    } catch (error) {
-        // ...错误处理...
-    }
-}*/
-
 // 动态生成分类过滤 
-function initFilters(services) {
-    // 初始化标签页
-    const tab = new mdui.Tab('#categoryTab');
-    
-    // 标签页切换事件
-    document.getElementById('categoryTab').addEventListener('changed.mdui.tab', function() {
-        const activeTab = this.querySelector('.mdui-tab-active');
-        const category = activeTab.textContent.trim().toLowerCase();
-        
-        document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
-            const show = category === '全部' || card.dataset.category === category;
-            card.style.display = show ? 'block' : 'none';
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/public/categories');
+        if (!response.ok) throw new Error(`分类加载失败: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error('分类加载失败:', error);
+        return [];
+    }
+}
+
+// 初始化过滤函数
+async function initFilters() {
+    try {
+        const categories = await loadCategories();
+        if (!categories.length) {
+            console.warn('未获取到分类数据');
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        categories.forEach(category => {
+            const tab = document.createElement('a');
+            tab.className = 'mdui-ripple mdui-ripple-white';
+            tab.textContent = category.name;
+            tab.dataset.categoryId = category.id;
+            fragment.appendChild(tab);
         });
-    });
+
+        domCache.tabContainer.innerHTML = '';
+        domCache.tabContainer.appendChild(fragment);
+        new mdui.Tab(domCache.tabContainer).handleUpdate();
+    } catch (error) {
+        console.error('分类初始化失败:', error);
+    }
+}
+
+// 带防抖的搜索功能
+function bindFilterEvents() {
+    let timeoutId;
+    const handler = function(e) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
+                const serviceName = card.dataset.name;
+                card.style.display = serviceName.includes(term) ? 'block' : 'none';
+            });
+        }, 300);
+    };
+
+    domCache.searchInput.removeEventListener('input', handler); // 先移除旧监听
+    domCache.searchInput.addEventListener('input', handler);
 }
 
 // 错误处理 

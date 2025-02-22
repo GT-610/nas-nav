@@ -59,13 +59,13 @@ class Service(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    category = db.Column(db.String(50), server_default='其他')
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     ip_url = db.Column(db.String(200))  # 新增IP地址字段
     domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
     description = db.Column(db.String(200))
     icon = db.Column(db.String(200))
     sort_order = db.Column(db.Integer, server_default='999')
-    category = db.relationship('Category', backref=db.backref('services', lazy=True))
+    
 
     def to_dict(self):
         return {c.name:  getattr(self, c.name)  for c in self.__table__.columns}
@@ -112,6 +112,16 @@ def public_get_services():
         app.logger.error(f"数据库查询失败: {str(e)}")
         abort(500)
 
+@app.route('/api/public/categories', methods=['GET'])
+def get_categories():
+    """获取所有分类"""
+    try:
+        categories = Category.query.order_by(Category.id).all()
+        return jsonify([{'id': c.id, 'name': c.name} for c in categories])
+    except SQLAlchemyError as e:
+        app.logger.error(f"分类查询失败: {str(e)}")
+        abort(500)
+
 # ---------------------------- 管理API ----------------------------
 @app.route('/api/services',  methods=['GET'])
 def get_services():
@@ -142,7 +152,7 @@ def add_service():
             name=data['name'],
             ip_url=data['ip_url'],
             domain_url=data['domain_url'],
-            category_id=data.get('category_id', 1),
+            category_id=data['category_id'],
             sort_order=max_order + 1 
         )
         
