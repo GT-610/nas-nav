@@ -43,8 +43,16 @@ CORS(app, supports_credentials=True)
 # 扩展初始化 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
- 
-# ---------------------------- 数据模型 ----------------------------
+
+# ---------------------------- 分类模型 ----------------------------
+class Category(db.Model):
+    """分类数据模型"""
+    __tablename__ = 'categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+# ---------------------------- 服务模型 ----------------------------
 class Service(db.Model):
     """服务导航数据模型"""
     __tablename__ = 'services'
@@ -57,7 +65,8 @@ class Service(db.Model):
     description = db.Column(db.String(200))
     icon = db.Column(db.String(200))
     sort_order = db.Column(db.Integer, server_default='999')
- 
+    category = db.relationship('Category', backref=db.backref('services', lazy=True))
+
     def to_dict(self):
         return {c.name:  getattr(self, c.name)  for c in self.__table__.columns}
  
@@ -93,7 +102,7 @@ def public_get_services():
         services = Service.query.order_by(Service.sort_order).all() 
         return jsonify([{
             'name': s.name,
-            'category': s.category,
+            'category': s.category.name,
             'ip_url': s.ip_url,   # 新增字段
             'domain_url': s.domain_url,   # 替换原url字段
             'description': s.description,
@@ -111,7 +120,10 @@ def get_services():
         abort(403)
     try:
         services = Service.query.order_by(Service.sort_order).all() 
-        return jsonify([s.to_dict() for s in services])
+        return jsonify([{
+            **s.to_dict(),
+            'category': s.category.name  # 添加分类名称字段
+        } for s in services])
     except SQLAlchemyError as e:
         app.logger.error(f" 数据库查询失败: {str(e)}")
         abort(500)
@@ -130,7 +142,7 @@ def add_service():
             name=data['name'],
             ip_url=data['ip_url'],
             domain_url=data['domain_url'],
-            category=data.get('category',  '其他'),
+            category_id=data.get('category_id', 1),
             sort_order=max_order + 1 
         )
         
@@ -157,7 +169,7 @@ def update_service(service_id):
         service.name  = data.get('name',  service.name) 
         service.ip_url  = data.get('ip_url',  service.ip_url)
         service.domain_url  = data.get('domain_url',  service.domain_url)   # 替换原字段 
-        service.category  = data.get('category',  service.category) 
+        service.category_id = data.get('category_id', service.category_id)
         
         db.session.commit() 
         return jsonify(success=True)
@@ -294,16 +306,23 @@ def init_db():
         db_path = app.config['BASE_DIR']  / 'db'
         db_path.mkdir(exist_ok=True) 
         
-        db.create_all() 
+        db.create_all()
+        
+        # 初始化默认分类
+        default_category = Category.query.filter_by(name="默认").first()
+        if not default_category:
+            default_category = Category(name="默认")
+            db.session.add(default_category)
+            db.session.commit()
         
         # 初始化默认密码 
         if not Auth.query.first(): 
             default_hash = generate_password_hash("admin")
             auth = Auth(password_hash=default_hash)
-            db.session.add(auth) 
-            db.session.commit() 
-            print("[安全警告] 已创建默认密码admin，请立即修改！")
+            db.session.add(auth)
             
+        db.session.commit()
+        print("[安全警告] 已创建默认密码admin，请立即修改！")
         print("数据库初始化完成")
     except Exception as e:
         print(f"初始化失败: {str(e)}")
