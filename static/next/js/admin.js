@@ -212,6 +212,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // 在DOMContentLoaded回调内添加
+    const fab = new mdui.Fab('#addFab', {
+        trigger: 'hover', // 修改触发方式为鼠标悬停
+        menuDelay: 100,   // 菜单弹出延迟(毫秒)
+        hysteresis: 8     // 悬停灵敏度
+    });
+
+    // 为子按钮添加点击事件示例（根据实际需要）
+    document.querySelectorAll('.mdui-fab-dial .mdui-fab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            fab.close();
+        });
+    });
+
+    // 在DOMContentLoaded事件中找到fab初始化代码块，添加以下内容
+    document.getElementById('addCategoryBtn').addEventListener('click', () => {
+        new mdui.Dialog('#addCategoryDialog').open();
+    });
+
     // 初始化加载 
     await loadServices();
 });
@@ -220,20 +239,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.deleteService = async (id) => {
     if (confirm('确定要删除这个服务吗？')) {
         try {
-            const response = await fetch(`/api/services/${id}`, { 
-                method: 'DELETE' 
+            const response = await fetch(`/api/services/${id}`, {
+                method: 'DELETE'
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || '删除失败');
             }
-            
+
             document.querySelector(`[data-id="${id}"]`).remove();
         } catch (error) {
             console.error('删除失败:', error);
             alert(error.message); // 显示后端返回的具体错误信息
-            if(error.message.includes('关联')) {
+            if (error.message.includes('关联')) {
                 alert('温馨提示：请先删除与该服务关联的其他数据');
             }
         }
@@ -306,4 +325,38 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
 // 确保“取消”按钮关闭模态框
 document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
     mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+});
+
+// 在文件底部添加分类表单提交处理
+document.getElementById('addCategoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const categoryName = formData.get('categoryName');
+
+    try {
+        const response = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: categoryName })
+        });
+
+        if (response.ok) {
+            mdui.snackbar({
+                message: '分类添加成功',
+                position: 'right-bottom'
+            });
+            document.getElementById('addCategoryDialog').querySelector('input').value = '';
+            new mdui.Dialog('#addCategoryDialog').close();
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || '添加分类失败');
+        }
+    } catch (error) {
+        mdui.snackbar({
+            message: error.message,
+            position: 'right-bottom',
+            buttonText: '关闭'
+        });
+    }
 });

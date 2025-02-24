@@ -70,26 +70,20 @@
             </div>
         </div>
 
-        <div class="mdui-fab-wrapper" id="exampleFab">
+        <div class="mdui-fab-wrapper" id="addFab">
             <button class="mdui-fab mdui-ripple mdui-color-theme-accent">
                 <!-- 默认显示的图标 -->
                 <i class="mdui-icon material-icons">add</i>
 
                 <!-- 在拨号菜单开始打开时，平滑切换到该图标，若不需要切换图标，则可以省略该元素 -->
-                <i class="mdui-icon mdui-fab-opened material-icons">add</i>
+                <i class="mdui-icon mdui-fab-opened material-icons">close</i>
             </button>
             <div class="mdui-fab-dial">
-                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-pink">
-                    <i class="mdui-icon material-icons">backup</i>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-pink" mdui-tooltip="{content: '添加服务', position: 'left'}">
+                    <i class="mdui-icon material-icons">add</i>
                 </button>
-                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-red">
-                    <i class="mdui-icon material-icons">bookmark</i>
-                </button>
-                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-orange">
-                    <i class="mdui-icon material-icons">access_alarms</i>
-                </button>
-                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-blue">
-                    <i class="mdui-icon material-icons">touch_app</i>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-red" mdui-tooltip="{content: '添加分类', position: 'left'}" id="addCategoryBtn">
+                    <i class="mdui-icon material-icons">add_to_photos</i>
                 </button>
             </div>
         </div>
@@ -132,5 +126,21 @@
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>
     <script src="../js/admin.js"></script>
 </body>
+
+<!-- 在页面底部添加分类对话框 -->
+<div class="mdui-dialog" id="addCategoryDialog">
+    <div class="mdui-dialog-title">新增分类</h2>
+        <form id="addCategoryForm" class="mdui-dialog-content">
+            <div class="mdui-textfield mdui-textfield-floating-label">
+                <label class="mdui-textfield-label">分类名称</label>
+                <input class="mdui-textfield-input" type="text" name="categoryName" required />
+            </div>
+        </form>
+        <div class="mdui-dialog-actions">
+            <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+            <button type="submit" form="addCategoryForm" class="mdui-btn mdui-ripple mdui-color-theme">创建</button>
+        </div>
+    </div>
+</div>
 
 </html>
