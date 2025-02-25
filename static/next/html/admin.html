@@ -13,7 +13,7 @@
 
 <body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
     <!-- 顶部导航 -->
-    <div class="mdui-appbar mdui-shadow-0">
+    <div class="mdui-appbar">
         <div class="mdui-toolbar mdui-color-theme">
             <span class="mdui-typo-title">NAS导航管理后台</span>
             <div class="mdui-toolbar-spacer"></div>
@@ -99,8 +99,9 @@
             <div class="mdui-dialog-content">
                 <form id="addCategoryForm">
                     <div class="mdui-textfield mdui-textfield-floating-label">
-                        <input class="mdui-textfield-input" type="text" name="categoryName" required />
                         <label class="mdui-textfield-label">分类名称</label>
+                        <input class="mdui-textfield-input" type="text" name="categoryName" required />
+
                     </div>
                 </form>
             </div>
@@ -138,7 +139,8 @@
                 </div>
                 <div class="mdui-dialog-actions">
                     <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-                    <button type="button" id="submitServiceBtn" class="mdui-btn mdui-ripple" mdui-dialog-confirm>创建</button>
+                    <button type="button" id="submitServiceBtn" class="mdui-btn mdui-ripple"
+                        mdui-dialog-confirm>创建</button>
                 </div>
             </div>
 

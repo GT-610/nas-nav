@@ -49,7 +49,7 @@ function renderCards(services) {
         
         // 数据属性设置
         Object.assign(card.dataset, {
-            category: (service.category || '').toLowerCase(),
+            category: (service.category || '未分类').toLowerCase(), // 添加默认值
             name: (service.name || '').toLowerCase(),
             search: `${service.name.toLowerCase()} ${service.description?.toLowerCase() || ''}`
         });
@@ -66,7 +66,7 @@ function renderCards(services) {
 
         // 内容填充
         clone.querySelector('.card-title').textContent = service.name;
-        clone.querySelector('.card-category').textContent = service.category;
+        clone.querySelector('.card-category').textContent = service.category || '未分类';
 
         // 描述处理
         const descriptionEl = clone.querySelector('.card-description');

@@ -59,7 +59,12 @@ class Service(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    category = db.relationship('Category', backref='services', lazy='joined')  # 添加lazy参数
+    category = db.relationship(
+        'Category',
+        backref=db.backref('services', lazy='dynamic'),
+        lazy='joined',  # 自动 JOIN 加载关联数据
+        foreign_keys=[category_id]
+    )
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     ip_url = db.Column(db.String(200))  # 新增IP地址字段
     domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
@@ -100,14 +105,14 @@ def serve_index():
 def public_get_services():
     """公开获取服务数据（无需认证）"""
     try:
-        services = Service.query.order_by(Service.sort_order).all() 
+        services = Service.query.options(db.joinedload(Service.category)).order_by(Service.sort_order).all()
         return jsonify([{
             'name': s.name,
-            'category': s.category.name,
-            'ip_url': s.ip_url,   # 新增字段
-            'domain_url': s.domain_url,   # 替换原url字段
+            'category': s.category.name if s.category else '未分类',  # 添加空值保护
+            'ip_url': s.ip_url,
+            'domain_url': s.domain_url,
             'description': s.description,
-            'icon': s.icon
+            'icon_url': s.icon  # 确保字段名与前端匹配
         } for s in services])
     except SQLAlchemyError as e:
         app.logger.error(f"数据库查询失败: {str(e)}")
