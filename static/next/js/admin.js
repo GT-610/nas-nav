@@ -1,362 +1,322 @@
-// 检查当前认证状态
-const checkAuth = async () => {
-    try {
-        // 改用更可靠的服务列表端点检测 
-        const res = await fetch('/api/services', {
-            method: 'HEAD',
-            credentials: 'include'
-        });
-        document.getElementById('managementContent').style.display = res.ok ? 'block' : 'none';
-        document.getElementById('loginContainer').style.display = res.ok ? 'none' : 'block';
-        await loadServices();
-    } catch (error) {
-        console.error(' 认证检查失败:', error);
+// 缓存常用DOM元素
+const domCache = {
+    managementContent: document.getElementById('managementContent'),
+    loginContainer: document.getElementById('loginContainer'),
+    serviceList: document.getElementById('serviceList'),
+    categorySelect: document.getElementById('categorySelect'),
+    loginForm: document.getElementById('loginForm'),
+    editForm: document.getElementById('editForm'),
+    addCategoryForm: document.getElementById('addCategoryForm')
+};
+
+// 通用请求配置
+const API_CONFIG = {
+    baseURL: '/api',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
     }
 };
 
-// 登录表单提交
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = document.getElementById('password').value;
+// 认证管理模块
+const authManager = {
+    checkAuth: async () => {
+        try {
+            const res = await fetch(`${API_CONFIG.baseURL}/services`, {
+                method: 'HEAD',
+                credentials: 'include'
+            });
 
-    const response = await fetch('/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-    });
+            const { managementContent, loginContainer } = domCache;
+            managementContent.style.display = res.ok ? 'block' : 'none';
+            loginContainer.style.display = res.ok ? 'none' : 'block';
 
-    if (response.ok) {
-        document.getElementById('loginContainer').remove(); // 移除登录表单
-        document.getElementById('managementContent').style.display = 'block'; // 显示管理内容
-        await loadServices(); // 登录后刷新列表 
-    } else {
-        alert('登录失败，请检查密码');
+            if (res.ok) await serviceManager.loadServices();
+        } catch (error) {
+            console.error('认证检查失败:', error);
+            utils.showSnackbar('系统繁忙，请稍后重试');
+        }
+    },
+
+    handleLogin: async (password) => {
+        try {
+            const response = await fetch('/admin/login', {
+                method: 'POST',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify({ password })
+            });
+
+            if (response.ok) {
+                domCache.loginContainer.remove();
+                domCache.managementContent.style.display = 'block';
+                await serviceManager.loadServices();
+            } else {
+                utils.showSnackbar('登录失败，请检查密码', 'error');
+            }
+        } catch (error) {
+            console.error('登录请求失败:', error);
+            utils.showSnackbar('网络异常，请检查连接');
+        }
     }
-});
+};
 
-// 安全通信 
-async function secureFetch(url, options = {}) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+// 服务管理模块
+const serviceManager = {
+    loadServices: async () => {
+        try {
+            const res = await fetch(`${API_CONFIG.baseURL}/services`);
+            const services = await res.json();
+            this.renderServices(services.sort((a, b) => a.sort_order - b.sort_order));
+            this.initSortable();
+        } catch (error) {
+            console.error('加载服务失败:', error);
+            utils.showSnackbar('服务加载失败，请刷新重试');
+        }
+    },
 
-    // 使用Web Crypto API加密 
-    const encoder = new TextEncoder();
-    const keyMaterial = await window.crypto.subtle.importKey(
-        "raw",
-        encoder.encode(sessionStorage.getItem('tempKey')),
-        { name: "AES-GCM" },
-        false,
-        ["encrypt"]
-    );
+    renderServices: (services) => {
+        const categoryTemplate = document.getElementById('categoryItemTemplate').content;
+        const serviceTemplate = document.getElementById('serviceItemTemplate').content;
+        const fragment = document.createDocumentFragment();
 
-    const encrypted = await window.crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        keyMaterial,
-        encoder.encode(JSON.stringify(options.body || {}))
-    );
-
-    return fetch(url, {
-        ...options,
-        headers: {
-            'X-Encrypted': 'AES256-GCM',
-            'X-Salt': btoa(String.fromCharCode(...salt)),
-            'X-IV': btoa(String.fromCharCode(...iv)),
-            ...options.headers
-        },
-        body: encrypted
-    });
-}
-
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await checkAuth();
-    // 加载服务列表 
-    const loadServices = async () => {
-        const res = await fetch('/api/services');
-        const services = await res.json();
-        const list = document.getElementById('serviceList');
-
-        // 按 sort_order 排序
-        services.sort((a, b) => a.sort_order - b.sort_order);
-
-        // 使用模板渲染服务项
-        const template = document.getElementById('serviceItemTemplate').content;
-        list.innerHTML = ''; // 清空列表
-        services.forEach(service => {
-            const clone = template.cloneNode(true);
-            clone.querySelector('[data-id]').setAttribute('data-id', service.id);
-            clone.querySelector('.badge').textContent = `#${service.id}`;
-            clone.querySelector('.service-name').textContent = service.name;
-            clone.querySelector('.service-category').textContent = service.category;
-            clone.querySelector('.delete-btn').setAttribute('onclick', `deleteService(${service.id})`);
-
-            // 绑定编辑按钮点击事件
-            const editBtn = clone.querySelector('.edit-btn');
-            if (editBtn) {
-                editBtn.addEventListener('click', () => {
-                    // 填充当前服务数据到模态框
-                    document.getElementById('editId').value = service.id;
-                    document.getElementById('editName').value = service.name;
-                    document.getElementById('editCategory').value = service.category;
-                    document.getElementById('editIpUrl').value = service.ip_url;
-                    document.getElementById('editDomainUrl').value = service.domain_url;
-
-                    // 打开模态框
-                    var editModal = new mdb.Modal(document.getElementById('editModal'));
-                    editModal.show();
-
-                    // 提交数据
-                    // document.getElementById('editForm').querySelector('.btn-primary').addEventListener('click', async () => {
-                    // });
-
-                    // 关闭模态框
-                    document.getElementById('editForm').querySelector('.btn-secondary').addEventListener('click', () => {
-                        editModal.hide();
-                    });
-                });
+        // 按分类分组服务
+        const categorized = services.reduce((acc, service) => {
+            const key = service.category_id || '未分类';
+            if (!acc[key]) {
+                acc[key] = {
+                    categoryId: service.category_id,
+                    categoryName: service.category,
+                    services: []
+                };
             }
+            acc[key].services.push(service);
+            return acc;
+        }, {});
 
+        // 渲染分类及子服务
+        Object.values(categorized).forEach(category => {
+            const categoryClone = categoryTemplate.cloneNode(true);
+            
+            // 设置分类信息
+            categoryClone.querySelector('.category-name').textContent = category.categoryName;
+            const sublist = categoryClone.querySelector('.service-sublist');
 
+            // 渲染服务项
+            category.services.forEach(service => {
+                const serviceClone = serviceTemplate.cloneNode(true);
+                serviceClone.querySelector('[data-id]').dataset.id = service.id;
+                serviceClone.querySelector('.service-name').textContent = service.name;
+                serviceClone.querySelector('.service-description').textContent = service.description;
+                serviceClone.querySelector('.delete-btn').onclick = () => serviceManager.deleteService(service.id);
+                serviceClone.querySelector('.edit-btn').onclick = () => this.prepareEditModal(service);
+                sublist.appendChild(serviceClone);
+            });
 
-            list.appendChild(clone);
+            fragment.appendChild(categoryClone);
         });
 
-        // 初始化拖拽排序 
-        new Sortable(list, {
+        domCache.serviceList.innerHTML = '';
+        domCache.serviceList.appendChild(fragment);
+        
+        // 初始化折叠组件
+        new mdui.Collapse(domCache.serviceList, {
+            accordion: true // 手风琴模式
+        });
+    },
+
+    prepareEditModal: (service) => {
+        const fields = ['id', 'name', 'category', 'ipUrl', 'domainUrl'];
+        fields.forEach(field => {
+            document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}`).value = service[field];
+        });
+
+        const modal = new mdb.Modal(document.getElementById('editModal'));
+        modal.show();
+    },
+
+    deleteService: async (id) => {
+        if (!confirm('确定要删除这个服务吗？')) return;
+
+        try {
+            const response = await fetch(`${API_CONFIG.baseURL}/services/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                document.querySelector(`[data-id="${id}"]`).remove();
+                utils.showSnackbar('删除成功');
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '删除失败');
+            }
+        } catch (error) {
+            console.error('删除失败:', error);
+            utils.showSnackbar(error.message.includes('关联') ?
+                '请先删除关联数据' : error.message, 'error');
+        }
+    },
+
+    initSortable: () => {
+        new Sortable(domCache.serviceList, {
             animation: 150,
-            easing: "cubic-bezier(0.4, 0, 0.2, 1)",
             ghostClass: 'sortable-ghost',
-            chosenClass: 'sortable-chosen',
-            dragClass: 'sortable-drag',
+            handle: '.mdui-list-item', // 仅允许拖拽列表项
+            group: 'nested',
             onEnd: async (evt) => {
-                const newOrder = [...list.children].map(li => parseInt(li.dataset.id));
-                await fetch('/api/services/reorder', {
+                // 需要调整排序逻辑以适应嵌套结构
+                const services = [...evt.from.querySelectorAll('[data-id]')]
+                    .map(li => parseInt(li.dataset.id));
+                
+                await fetch(`${API_CONFIG.baseURL}/services/reorder`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newOrder)
+                    headers: API_CONFIG.headers,
+                    body: JSON.stringify(services)
                 });
-                loadServices(); // 刷新排序编号 
+                
+                this.loadServices();
             }
         });
-    };
+    }
+};
 
-    // 添加服务 
-    document.getElementById('addForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
+// 分类管理模块
+const categoryManager = {
+    loadCategories: async () => {
+        try {
+            const res = await fetch(`${API_CONFIG.baseURL}/public/categories`);
+            const categories = await res.json();
 
-        const res = await fetch('/api/services', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        if (res.ok) {
-            e.target.reset();
-            await loadServices();
-        } else {
-            alert('添加失败，服务名称可能已存在');
+            domCache.categorySelect.innerHTML = `
+                <option value="" disabled selected>选择分类</option>
+                ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+            `;
+        } catch (error) {
+            console.error('加载分类失败:', error);
+            utils.showSnackbar('分类加载失败');
         }
-    });
+    },
 
-    // 编辑表单提交处理
-    document.getElementById('editForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    handleCategorySubmit: async (formData) => {
+        const categoryName = formData.get('categoryName').trim();
+        if (!categoryName) return utils.showSnackbar('分类名称不能为空', 'warning');
 
-        const editData = {
-            id: document.getElementById('editId').value,
-            name: document.getElementById('editName').value,
-            category: document.getElementById('editCategory').value,
-            ip_url: document.getElementById('editIpUrl').value,
-            domain_url: document.getElementById('editDomainUrl').value
-        };
+        try {
+            const response = await fetch(`${API_CONFIG.baseURL}/categories`, {
+                method: 'POST',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify({ name: categoryName })
+            });
 
-        const response = await fetch(`/api/services/${editData.id}`, { // 匹配 app.py 的路由格式
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: editData.name,
-                category: editData.category,
-                ip_url: editData.ip_url,
-                domain_url: editData.domain_url,
-            })
-        });
-
-        if (response.ok) {
-            // 关闭模态框并刷新列表
-            mdb.Modal.getInstance(document.getElementById('editModal')).hide();
-            // 成功提示逻辑
-            const alertEl = document.getElementById('successAlert');
-            alertEl.style.display = 'block';
-            alertEl.classList.add('show');
-
-            // 3秒后自动隐藏
-            setTimeout(() => {
-                alertEl.classList.remove('show');
-                setTimeout(() => alertEl.style.display = 'none', 150);
-            }, 3000);
-
-            await loadServices();
-        } else {
-            // 失败提示逻辑
-            const alertEl = document.getElementById('failAlert');
-            alertEl.style.display = 'block';
-            alertEl.classList.add('show');
-
-            // 3秒后自动隐藏
-            setTimeout(() => {
-                alertEl.classList.remove('show');
-                setTimeout(() => alertEl.style.display = 'none', 150);
-            }, 3000);
+            if (response.ok) {
+                utils.showSnackbar('分类添加成功');
+                new mdui.Dialog('#addCategoryDialog').close();
+                setTimeout(serviceManager.loadServices, 1000);
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '添加失败');
+            }
+        } catch (error) {
+            console.error('添加分类失败:', error);
+            utils.showSnackbar(error.message, 'error');
         }
-    });
+    }
+};
 
-    // 在DOMContentLoaded回调内添加
-    const fab = new mdui.Fab('#addFab', {
-        trigger: 'hover', // 修改触发方式为鼠标悬停
-        menuDelay: 100,   // 菜单弹出延迟(毫秒)
-        hysteresis: 8     // 悬停灵敏度
-    });
-
-    // 为子按钮添加点击事件示例（根据实际需要）
-    document.querySelectorAll('.mdui-fab-dial .mdui-fab').forEach(btn => {
-        btn.addEventListener('click', () => {
-            fab.close();
+// 工具函数
+const utils = {
+    showSnackbar: (message, type = 'success') => {
+        const snackbar = new mdui.snackbar({
+            message: message,
+            position: 'bottom',
+            buttonText: '关闭',
+            timeout: 3000
         });
+        snackbar.open();
+    },
+
+    secureFetch: async (url, options = {}) => {
+        try {
+            const [salt, iv] = [
+                crypto.getRandomValues(new Uint8Array(16)),
+                crypto.getRandomValues(new Uint8Array(12))
+            ];
+
+            const keyMaterial = await crypto.subtle.importKey(
+                "raw",
+                new TextEncoder().encode(sessionStorage.tempKey),
+                { name: "AES-GCM" },
+                false,
+                ["encrypt"]
+            );
+
+            const encrypted = await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv },
+                keyMaterial,
+                new TextEncoder().encode(JSON.stringify(options.body || {}))
+            );
+
+            return fetch(url, {
+                ...options,
+                headers: {
+                    'X-Encrypted': 'AES256-GCM',
+                    'X-Salt': btoa(String.fromCharCode(...salt)),
+                    'X-IV': btoa(String.fromCharCode(...iv)),
+                    ...options.headers
+                },
+                body: encrypted
+            });
+        } catch (error) {
+            console.error('安全请求失败:', error);
+            throw new Error('安全通信失败');
+        }
+    }
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', async () => {
+    // 事件委托
+    domCache.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await authManager.handleLogin(document.getElementById('password').value);
     });
 
-    // 在DOMContentLoaded事件中找到fab初始化代码块，添加以下内容
+    domCache.editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await serviceManager.handleEditSubmit(new FormData(e.target));
+    });
+
+    domCache.addCategoryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await categoryManager.handleCategorySubmit(new FormData(e.target));
+    });
+
+    // 初始化组件
+    new mdui.Fab('#addFab', {
+        trigger: 'hover',
+        menuDelay: 100,
+        hysteresis: 8
+    });
+
     document.getElementById('addCategoryBtn').addEventListener('click', () => {
         new mdui.Dialog('#addCategoryDialog').open();
     });
 
-    // 初始化加载 
-    await loadServices();
-});
-
-// 删除服务函数 
-window.deleteService = async (id) => {
-    if (confirm('确定要删除这个服务吗？')) {
-        try {
-            const response = await fetch(`/api/services/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '删除失败');
-            }
-
-            document.querySelector(`[data-id="${id}"]`).remove();
-        } catch (error) {
-            console.error('删除失败:', error);
-            alert(error.message); // 显示后端返回的具体错误信息
-            if (error.message.includes('关联')) {
-                alert('温馨提示：请先删除与该服务关联的其他数据');
-            }
-        }
-    }
-};
-
-// 前端密码验证
-function validatePasswordComplexity(password) {
-    const errors = [];
-
-    if (password.length < 8) {
-        errors.push("密码长度至少8位");
-    }
-    if (!/[A-Z]/.test(password)) {
-        errors.push("必须包含至少一个大写字母");
-    }
-    if (!/[0-9]/.test(password)) {
-        errors.push("必须包含至少一个数字");
-    }
-
-    if (errors.length > 0) {
-        throw new Error(errors.join("\n"));
-    }
-}
-
-// 打开修改密码模态框
-document.getElementById('changePasswordBtn').addEventListener('click', () => {
-    var changePasswordModal = new mdb.Modal(document.getElementById('changePasswordModal'));
-    changePasswordModal.show();
-});
-
-// 修改密码表单提交处理
-document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const oldPassword = document.getElementById('oldPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-
-    // 验证新密码复杂度
-    try {
-        validatePasswordComplexity(newPassword);
-    } catch (error) {
-        alert(error.message);
-        return;
-    }
-
-    // 验证新密码和确认新密码是否一致
-    if (newPassword !== confirmNewPassword) {
-        alert('新密码和确认新密码不一致');
-        return;
-    }
-
-    // 发送请求到后端进行密码修改
-    const response = await fetch('/admin/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldPassword, newPassword })
+    document.getElementById('addServiceBtn').addEventListener('click', () => {
+        new mdui.Dialog('#addServiceDialog').open();
     });
 
-    if (response.ok) {
-        alert('密码修改成功');
-        mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-    } else {
-        const data = await response.json();
-        alert(data.error || '密码修改失败');
-    }
+    // 加载数据
+    await authManager.checkAuth();
+    await categoryManager.loadCategories();
+    await serviceManager.loadServices();
 });
 
-// 确保“取消”按钮关闭模态框
-document.getElementById('changePasswordForm').querySelector('.btn-danger').addEventListener('click', () => {
-    mdb.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-});
-
-// 在文件底部添加分类表单提交处理
-document.getElementById('addCategoryForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const categoryName = formData.get('categoryName');
-
-    try {
-        const response = await fetch('/api/categories', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: categoryName })
-        });
-
-        if (response.ok) {
-            mdui.snackbar({
-                message: '分类添加成功',
-                position: 'right-bottom'
-            });
-            document.getElementById('addCategoryDialog').querySelector('input').value = '';
-            new mdui.Dialog('#addCategoryDialog').close();
-        } else {
-            const error = await response.json();
-            throw new Error(error.message || '添加分类失败');
-        }
-    } catch (error) {
-        mdui.snackbar({
-            message: error.message,
-            position: 'right-bottom',
-            buttonText: '关闭'
-        });
-    }
-});
+// 保持原有全局函数兼容性
+window.deleteService = serviceManager.deleteService;
+window.validatePasswordComplexity = (password) => {
+    const errors = [];
+    if (password.length < 8) errors.push("密码长度至少8位");
+    if (!/[A-Z]/.test(password)) errors.push("必须包含至少一个大写字母");
+    if (!/[0-9]/.test(password)) errors.push("必须包含至少一个数字");
+    if (errors.length) throw new Error(errors.join("\n"));
+};

@@ -122,6 +122,77 @@ def get_categories():
         app.logger.error(f"分类查询失败: {str(e)}")
         abort(500)
 
+# ---------------------------- 分类管理API ----------------------------
+@app.route('/api/categories', methods=['POST'])
+def add_category():
+    """添加新分类"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        data = request.get_json()
+        if not data.get('name'):
+            return jsonify(error="分类名称不能为空"), 400
+
+        category = Category(name=data['name'])
+        db.session.add(category)
+        db.session.commit()
+        return jsonify({'id': category.id}), 201
+        
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(error="分类名称已存在"), 409
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"添加分类失败: {str(e)}")
+        abort(500)
+
+@app.route('/api/categories/<int:category_id>', methods=['DELETE'])
+def delete_category(category_id):
+    """删除分类"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        category = Category.query.get_or_404(category_id)
+        
+        # 检查是否有服务关联
+        if Service.query.filter_by(category_id=category_id).first():
+            return jsonify(error="请先删除该分类下的所有服务"), 409
+            
+        db.session.delete(category)
+        db.session.commit()
+        return jsonify(success=True)
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"删除分类失败: {str(e)}")
+        abort(500)
+
+@app.route('/api/categories/<int:category_id>', methods=['PUT'])
+def update_category(category_id):
+    """更新分类信息"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        category = Category.query.get_or_404(category_id)
+        data = request.get_json()
+        
+        if not data.get('name'):
+            return jsonify(error="分类名称不能为空"), 400
+            
+        category.name = data['name']
+        db.session.commit()
+        return jsonify(success=True)
+        
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(error="分类名称已存在"), 409
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"更新分类失败: {str(e)}")
+        abort(500)
 # ---------------------------- 管理API ----------------------------
 @app.route('/api/services',  methods=['GET'])
 def get_services():
