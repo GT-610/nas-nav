@@ -62,7 +62,7 @@ const authManager = {
 
 // 服务管理模块
 const serviceManager = {
-    loadServices: async () => {
+    loadServices: async function () { // 修改处
         try {
             const res = await fetch(`${API_CONFIG.baseURL}/services`);
             const services = await res.json();
@@ -74,54 +74,111 @@ const serviceManager = {
         }
     },
 
-    renderServices: (services) => {
-        const categoryTemplate = document.getElementById('categoryItemTemplate').content;
-        const serviceTemplate = document.getElementById('serviceItemTemplate').content;
-        const fragment = document.createDocumentFragment();
-
-        // 按分类分组服务
-        const categorized = services.reduce((acc, service) => {
-            const key = service.category_id || '未分类';
-            if (!acc[key]) {
-                acc[key] = {
-                    categoryId: service.category_id,
-                    categoryName: service.category,
-                    services: []
+    renderServices: async function(services) {
+        try {
+            // 获取所有分类（包含空分类）
+            const categoriesRes = await fetch(`${API_CONFIG.baseURL}/public/categories`);
+            const allCategories = await categoriesRes.json();
+    
+            const categoryTemplate = document.getElementById('categoryItemTemplate').content;
+            const serviceTemplate = document.getElementById('serviceItemTemplate').content;
+            const fragment = document.createDocumentFragment();
+    
+            // 按分类ID建立映射
+            const categoryMap = allCategories.reduce((acc, c) => {
+                acc[c.id] = {
+                    ...c,
+                    services: services.filter(s => s.category_id === c.id)
                 };
-            }
-            acc[key].services.push(service);
-            return acc;
-        }, {});
-
-        // 渲染分类及子服务
-        Object.values(categorized).forEach(category => {
-            const categoryClone = categoryTemplate.cloneNode(true);
-            
-            // 设置分类信息
-            categoryClone.querySelector('.category-name').textContent = category.categoryName;
-            const sublist = categoryClone.querySelector('.service-sublist');
-
-            // 渲染服务项
-            category.services.forEach(service => {
-                const serviceClone = serviceTemplate.cloneNode(true);
-                serviceClone.querySelector('[data-id]').dataset.id = service.id;
-                serviceClone.querySelector('.service-name').textContent = service.name;
-                serviceClone.querySelector('.service-description').textContent = service.description;
-                serviceClone.querySelector('.delete-btn').onclick = () => serviceManager.deleteService(service.id);
-                serviceClone.querySelector('.edit-btn').onclick = () => this.prepareEditModal(service);
-                sublist.appendChild(serviceClone);
+                return acc;
+            }, {});
+    
+            // 按分类名称排序
+            const sortedCategories = Object.values(categoryMap).sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
+    
+            // 生成分类结构
+            sortedCategories.forEach(category => {
+                const categoryClone = document.importNode(categoryTemplate, true);
+                const categoryHeader = categoryClone.querySelector('.mdui-collapse-item-header');
+                const sublist = categoryClone.querySelector('.service-sublist');
+    
+                // 设置分类名称和数量
+                categoryClone.querySelector('.category-name').textContent = 
+                    `${category.name} (${category.services.length})`;
+    
+                // 生成服务项（即使为空也保留分类）
+                category.services.forEach(service => {
+                    // ... 原有服务项生成逻辑 ...
+                });
+    
+                // 添加空分类提示
+                if (category.services.length === 0) {
+                    const emptyItem = document.createElement('li');
+                    emptyItem.className = 'mdui-list-item';
+                    emptyItem.innerHTML = `
+                        <div class="mdui-list-item-content">
+                            <div class="mdui-text-color-theme-secondary">暂无服务</div>
+                        </div>
+                    `;
+                    sublist.appendChild(emptyItem);
+                }
+    
+                fragment.appendChild(categoryClone);
             });
 
-            fragment.appendChild(categoryClone);
-        });
+            // 更新DOM
+            domCache.serviceList.innerHTML = '';
+            domCache.serviceList.appendChild(fragment);
 
-        domCache.serviceList.innerHTML = '';
-        domCache.serviceList.appendChild(fragment);
-        
-        // 初始化折叠组件
+        } catch (error) {
+            console.error('渲染失败:', error);
+            utils.showSnackbar('数据加载异常');
+        }
+
+        // 初始化MDUI折叠组件
         new mdui.Collapse(domCache.serviceList, {
-            accordion: true // 手风琴模式
+            accordion: false
         });
+    },
+
+    handleAddSubmit: async () => {
+        const formData = {
+            name: document.querySelector('#addServiceDialog [name="name"]').value.trim(),
+            ip_url: document.querySelector('#addServiceDialog [name="ip_url"]').value.trim(),
+            domain_url: document.querySelector('#addServiceDialog [name="domain_url"]').value.trim(),
+            category_id: parseInt(document.getElementById('categorySelect').value),
+            description: document.querySelector('#addServiceDialog [name="description"]').value.trim()
+        };
+
+        // 基础验证
+        if (!formData.name || !formData.domain_url || !formData.category_id) {
+            return utils.showSnackbar('请填写必填字段', 'warning');
+        }
+
+        try {
+            const response = await fetch(`${API_CONFIG.baseURL}/services`, {
+                method: 'POST',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                utils.showSnackbar('服务添加成功');
+                await this.loadServices(); // 刷新服务列表
+            } else {
+                throw new Error(result.error || '添加服务失败');
+            }
+        } catch (error) {
+            console.error('添加服务失败:', error);
+            utils.showSnackbar(
+                error.message.includes('已存在') ? '服务名称已存在' : error.message,
+                'error'
+            );
+        }
     },
 
     prepareEditModal: (service) => {
@@ -156,24 +213,23 @@ const serviceManager = {
         }
     },
 
-    initSortable: () => {
+    initSortable: function () {
         new Sortable(domCache.serviceList, {
             animation: 150,
             ghostClass: 'sortable-ghost',
             handle: '.mdui-list-item', // 仅允许拖拽列表项
             group: 'nested',
             onEnd: async (evt) => {
-                // 需要调整排序逻辑以适应嵌套结构
                 const services = [...evt.from.querySelectorAll('[data-id]')]
                     .map(li => parseInt(li.dataset.id));
-                
+
                 await fetch(`${API_CONFIG.baseURL}/services/reorder`, {
                     method: 'POST',
                     headers: API_CONFIG.headers,
                     body: JSON.stringify(services)
                 });
-                
-                this.loadServices();
+
+                serviceManager.loadServices();
             }
         });
     }
@@ -183,21 +239,33 @@ const serviceManager = {
 const categoryManager = {
     loadCategories: async () => {
         try {
+            // 先清空选项（包括动态添加的）
+            while (domCache.categorySelect.options.length > 1) {
+                domCache.categorySelect.remove(1);
+            }
+            
             const res = await fetch(`${API_CONFIG.baseURL}/public/categories`);
             const categories = await res.json();
 
-            domCache.categorySelect.innerHTML = `
-                <option value="" disabled selected>选择分类</option>
-                ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-            `;
+            // 添加新选项
+            categories.forEach(c => {
+                const option = new Option(c.name, c.id);
+                domCache.categorySelect.add(option);
+            });
+
+            // 强制刷新MDUI组件
+            new mdui.Select('#categorySelect', {
+                autoInit: true,
+                position: 'bottom'
+            });
         } catch (error) {
             console.error('加载分类失败:', error);
             utils.showSnackbar('分类加载失败');
         }
     },
 
-    handleCategorySubmit: async (formData) => {
-        const categoryName = formData.get('categoryName').trim();
+    handleCategorySubmit: async () => {
+        const categoryName = document.querySelector('#addCategoryForm [name="categoryName"]').value.trim();
         if (!categoryName) return utils.showSnackbar('分类名称不能为空', 'warning');
 
         try {
@@ -207,17 +275,19 @@ const categoryManager = {
                 body: JSON.stringify({ name: categoryName })
             });
 
+            const result = await response.json();
+
             if (response.ok) {
                 utils.showSnackbar('分类添加成功');
-                new mdui.Dialog('#addCategoryDialog').close();
-                setTimeout(serviceManager.loadServices, 1000);
+                await categoryManager.loadCategories();  // 刷新分类列表
+                await serviceManager.loadServices();     // 刷新服务列表
             } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '添加失败');
+                throw new Error(result.error || '添加失败');
             }
         } catch (error) {
             console.error('添加分类失败:', error);
-            utils.showSnackbar(error.message, 'error');
+            utils.showSnackbar(error.message.includes('已存在') ?
+                '分类名称已存在' : error.message, 'error');
         }
     }
 };
@@ -285,9 +355,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await serviceManager.handleEditSubmit(new FormData(e.target));
     });
 
-    domCache.addCategoryForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await categoryManager.handleCategorySubmit(new FormData(e.target));
+    document.getElementById('submitServiceBtn').addEventListener('click', async () => {
+        await serviceManager.handleAddSubmit();
+    });
+
+    document.getElementById('submitCategoryBtn').addEventListener('click', async () => {
+        await categoryManager.handleCategorySubmit();
     });
 
     // 初始化组件
@@ -301,7 +374,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         new mdui.Dialog('#addCategoryDialog').open();
     });
 
-    document.getElementById('addServiceBtn').addEventListener('click', () => {
+    document.getElementById('addServiceBtn').addEventListener('click', async () => {
+        // 先加载最新分类数据
+        await categoryManager.loadCategories(); 
+        // 然后打开对话框
         new mdui.Dialog('#addServiceDialog').open();
     });
 

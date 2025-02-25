@@ -52,7 +52,7 @@
             <!-- 服务列表 -->
             <div class="mdui-card">
                 <div class="mdui-card-header">
-                    <h2 class="mdui-card-header-title">服务排序管理</h2>
+                    <h2 class="mdui-card-header-title">服务管理</h2>
                 </div>
                 <ul id="serviceList" class="mdui-list sortable-list">
                     <!-- 动态内容保持结构不变 -->
@@ -106,7 +106,8 @@
             </div>
             <div class="mdui-dialog-actions">
                 <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-                <button type="button" id="submitCategoryBtn" class="mdui-btn mdui-ripple">创建</button>
+                <button type="button" id="submitCategoryBtn" class="mdui-btn mdui-ripple mdui-color-theme"
+                    mdui-dialog-confirm>创建</button>
             </div>
         </div>
 
@@ -137,17 +138,17 @@
                 </div>
                 <div class="mdui-dialog-actions">
                     <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-                    <button type="button" id="submitServiceBtn" class="mdui-btn mdui-ripple">创建</button>
+                    <button type="button" id="submitServiceBtn" class="mdui-btn mdui-ripple" mdui-dialog-confirm>创建</button>
                 </div>
             </div>
 
             <!-- 分类列表模板 -->
             <template id="categoryItemTemplate">
-                <li class="mdui-collapse-item mdui-ripple">
-                    <div class="mdui-collapse-item-header mdui-list-item">
-                        <i class="mdui-icon material-icons">folder</i>
+                <li class="mdui-collapse-item">
+                    <div class="mdui-collapse-item-header mdui-list-item mdui-ripple">
+                        <i class="mdui-icon material-icons">folder_open</i>
                         <div class="mdui-list-item-content">
-                            <div class="category-name"></div>
+                            <div class="category-name mdui-text-color-theme-text"></div>
                         </div>
                         <i class="mdui-collapse-item-arrow mdui-icon material-icons">keyboard_arrow_down</i>
                     </div>

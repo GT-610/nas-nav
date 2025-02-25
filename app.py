@@ -59,6 +59,7 @@ class Service(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
+    category = db.relationship('Category', backref='services', lazy='joined')  # 添加lazy参数
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     ip_url = db.Column(db.String(200))  # 新增IP地址字段
     domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
