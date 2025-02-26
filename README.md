@@ -54,7 +54,6 @@ Create a .env file in the root directory with environment variables:
 ```bash
 FLASK_APP=nasnav
 FLASK_ENV=development
-SECRET_KEY=your-secret-key
 DATABASE_URI=sqlite:///instance/nasnav.db
 ```
 
