@@ -9,25 +9,25 @@ const domCache = {
 // 安全地转义 HTML
 function escapeHtml(unsafe) {
     return unsafe.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // 加载服务列表
 async function loadServices(category = 'all') {
     try {
         domCache.container.innerHTML = `<div class="mdui-spinner"></div>`;
-        
+
         // 移除 initFilters 调用
         const servicesResponse = await fetch(new URL(`/api/public/services?category=${encodeURIComponent(category)}`, window.location.origin));
-        
+
         if (!servicesResponse.ok) throw new Error(`HTTP错误! 状态码: ${servicesResponse.status}`);
-        
+
         const services = await servicesResponse.json();
         renderCards(services);
-        
+
         // 更新URL参数保持状态
         window.history.replaceState({}, '', `?category=${encodeURIComponent(category)}`);
     } catch (error) {
@@ -51,11 +51,11 @@ async function checkServiceStatus() {
 // 卡片渲染函数 
 function renderCards(services) {
     const fragment = document.createDocumentFragment();
-    
+
     services.forEach(service => {
         const clone = document.importNode(domCache.template, true); // 使用 importNode 提升性能
         const card = clone.querySelector('.mdui-col-xs-12');
-        
+
         // 数据属性设置
         Object.assign(card.dataset, {
             category: (service.category || '未分类').toLowerCase(), // 添加默认值
@@ -120,6 +120,13 @@ async function initFilters() {
         }
 
         const fragment = document.createDocumentFragment();
+
+        const tab = document.createElement('a');
+        tab.className = 'mdui-ripple mdui-ripple-white active';
+        tab.textContent = '全部';
+        tab.dataset.category = 'all';
+        fragment.appendChild(tab);
+
         categories.forEach(category => {
             const tab = document.createElement('a');
             tab.className = 'mdui-ripple mdui-ripple-white';
@@ -131,11 +138,11 @@ async function initFilters() {
         domCache.tabContainer.innerHTML = '';
         domCache.tabContainer.appendChild(fragment);
         new mdui.Tab(domCache.tabContainer).handleUpdate();
-        
+
         // 新增标签点击监听
         domCache.tabContainer.addEventListener('click', (e) => {
             if (e.target.tagName === 'A') {
-                filterByCategory(e.target.dataset.category);
+                filterByCategory(e.target.dataset.category || 'all');
             }
         });
     } catch (error) {
@@ -186,9 +193,9 @@ function applyCombinedFilter(term) {
     let hasVisible = false;
 
     cards.forEach(card => {
-        const searchMatch = card.dataset.name.includes(term) || 
-                          card.dataset.search.includes(term);
-        
+        const searchMatch = card.dataset.name.includes(term) ||
+            card.dataset.search.includes(term);
+
         const shouldShow = searchMatch;
         card.style.display = shouldShow ? 'block' : 'none';
         if (shouldShow) hasVisible = true;
@@ -215,7 +222,7 @@ function handleLoadingError(error) {
 document.addEventListener('DOMContentLoaded', async () => {
     // 先加载分类
     await initFilters();
-    
+
     // 再加载服务
     const urlParams = new URLSearchParams(window.location.search);
     const initialCategory = urlParams.get('category') || 'all';

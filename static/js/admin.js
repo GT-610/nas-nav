@@ -113,7 +113,12 @@ const serviceManager = {
                     const serviceClone = document.importNode(serviceTemplate, true);
                     serviceClone.querySelector('.service-name').textContent = service.name;
                     serviceClone.querySelector('.service-description').textContent = service.description || '';
-                    serviceClone.querySelector('.edit-btn').addEventListener('click', () => serviceManager.prepareEditModal(service));
+                    serviceClone.querySelector('.edit-btn').addEventListener('click', () => {
+                        serviceManager.prepareEditModal({
+                            ...service,
+                            category_id: service.category_id // 确保传递正确的分类ID字段
+                        });
+                    });
                     serviceClone.querySelector('.delete-btn').addEventListener('click', () => serviceManager.deleteService(service.id));
                     sublist.appendChild(serviceClone);
                 });
@@ -182,13 +187,26 @@ const serviceManager = {
     },
 
     prepareEditModal: (service) => {
-        const fields = ['id', 'name', 'category', 'ipUrl', 'domainUrl'];
-        fields.forEach(field => {
-            document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}`).value = service[field];
+        // 修改字段映射关系
+        const fieldMap = {
+            name: 'editName',
+            category_id: 'editCategory', // 映射到实际的 ID
+            ip_url: 'editIpUrl',
+            domain_url: 'editDomainUrl',
+            description: 'editDescription'
+        };
+    
+        // 遍历映射关系设置值
+        Object.entries(fieldMap).forEach(([field, id]) => {
+            document.getElementById(id).value = service[field];
         });
-
-        const modal = new mdb.Modal(document.getElementById('editModal'));
-        modal.show();
+    
+        // 强制刷新 MDUI 的下拉组件
+        new mdui.Select('#editCategory', { position: 'bottom' });
+    
+        // 打开对话框（修正 ID）
+        const modal = new mdui.Dialog('#editServiceDialog');
+        modal.open();
     },
 
     deleteService: async (id) => {

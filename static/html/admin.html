@@ -101,12 +101,30 @@
             </div>
         </div>
 
-        <!-- 模态对话框 -->
+        <!-- 编辑服务对话框 -->
         <div class="mdui-dialog" id="editServiceDialog">
             <div class="mdui-dialog-title">编辑服务</div>
             <div class="mdui-dialog-content">
                 <form id="editForm">
-                    <!-- 表单内容 -->
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">服务名称</label>
+                        <input class="mdui-textfield-input" type="text" id="editName" name="name" required />
+                    </div>
+                    <select class="mdui-select" name="category_id" id="editCategory" mdui-select required>
+                        <option value="" disabled selected>选择分类</option>
+                    </select>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">IP地址</label>
+                        <input class="mdui-textfield-input" type="text" id="editIpUrl" name="ip_url" required />
+                    </div>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">域名地址</label>
+                        <input class="mdui-textfield-input" type="url" id="editDomainUrl" name="domain_url" required />
+                    </div>
+                    <div class="mdui-textfield">
+                        <label class="mdui-textfield-label">服务描述（可选）</label>
+                        <textarea class="mdui-textfield-input" id="editDescription" name="description"></textarea>
+                    </div>
                 </form>
             </div>
             <div class="mdui-dialog-actions">
