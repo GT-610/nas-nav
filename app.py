@@ -63,7 +63,6 @@ class Service(db.Model):
         'Category',
         backref=db.backref('services', lazy='dynamic'),
         lazy='joined',  # 自动 JOIN 加载关联数据
-        foreign_keys=[category_id]
     )
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     ip_url = db.Column(db.String(200))  # 新增IP地址字段
