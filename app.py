@@ -102,17 +102,28 @@ def serve_index():
 # 公开只读端点
 @app.route('/api/public/services', methods=['GET'])
 def public_get_services():
-    """公开获取服务数据（无需认证）"""
+    """公开获取服务数据（支持分类过滤）"""
     try:
-        services = Service.query.options(db.joinedload(Service.category)).order_by(Service.sort_order).all()
+        category_filter = request.args.get('category')
+        base_query = Service.query.options(db.joinedload(Service.category))
+
+        # 添加分类过滤条件
+        if category_filter and category_filter.lower() != 'all':
+            base_query = base_query.join(Category).filter(
+                db.func.lower(Category.name) == category_filter.lower()
+            )
+
+        services = base_query.order_by(Service.sort_order).all()
+        
         return jsonify([{
             'name': s.name,
-            'category': s.category.name if s.category else '未分类',  # 添加空值保护
+            'category': s.category.name if s.category else '未分类',
             'ip_url': s.ip_url,
             'domain_url': s.domain_url,
             'description': s.description,
-            'icon_url': s.icon  # 确保字段名与前端匹配
+            'icon_url': s.icon
         } for s in services])
+        
     except SQLAlchemyError as e:
         app.logger.error(f"数据库查询失败: {str(e)}")
         abort(500)

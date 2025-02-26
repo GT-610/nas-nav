@@ -74,16 +74,16 @@ const serviceManager = {
         }
     },
 
-    renderServices: async function(services) {
+    renderServices: async function (services) {
         try {
             // 获取所有分类（包含空分类）
             const categoriesRes = await fetch(`${API_CONFIG.baseURL}/public/categories`);
             const allCategories = await categoriesRes.json();
-    
+
             const categoryTemplate = document.getElementById('categoryItemTemplate').content;
             const serviceTemplate = document.getElementById('serviceItemTemplate').content;
             const fragment = document.createDocumentFragment();
-    
+
             // 按分类ID建立映射
             const categoryMap = allCategories.reduce((acc, c) => {
                 acc[c.id] = {
@@ -92,27 +92,32 @@ const serviceManager = {
                 };
                 return acc;
             }, {});
-    
+
             // 按分类名称排序
-            const sortedCategories = Object.values(categoryMap).sort((a, b) => 
+            const sortedCategories = Object.values(categoryMap).sort((a, b) =>
                 a.name.localeCompare(b.name)
             );
-    
+
             // 生成分类结构
             sortedCategories.forEach(category => {
                 const categoryClone = document.importNode(categoryTemplate, true);
                 const categoryHeader = categoryClone.querySelector('.mdui-collapse-item-header');
                 const sublist = categoryClone.querySelector('.service-sublist');
-    
+
                 // 设置分类名称和数量
-                categoryClone.querySelector('.category-name').textContent = 
+                categoryClone.querySelector('.category-name').textContent =
                     `${category.name} (${category.services.length})`;
-    
+
                 // 生成服务项（即使为空也保留分类）
                 category.services.forEach(service => {
-                    // ... 原有服务项生成逻辑 ...
+                    const serviceClone = document.importNode(serviceTemplate, true);
+                    serviceClone.querySelector('.service-name').textContent = service.name;
+                    serviceClone.querySelector('.service-description').textContent = service.description || '';
+                    serviceClone.querySelector('.edit-btn').addEventListener('click', () => serviceManager.prepareEditModal(service));
+                    serviceClone.querySelector('.delete-btn').addEventListener('click', () => serviceManager.deleteService(service.id));
+                    sublist.appendChild(serviceClone);
                 });
-    
+
                 // 添加空分类提示
                 if (category.services.length === 0) {
                     const emptyItem = document.createElement('li');
@@ -124,7 +129,7 @@ const serviceManager = {
                     `;
                     sublist.appendChild(emptyItem);
                 }
-    
+
                 fragment.appendChild(categoryClone);
             });
 
@@ -136,11 +141,6 @@ const serviceManager = {
             console.error('渲染失败:', error);
             utils.showSnackbar('数据加载异常');
         }
-
-        // 初始化MDUI折叠组件
-        new mdui.Collapse(domCache.serviceList, {
-            accordion: false
-        });
     },
 
     handleAddSubmit: async () => {
@@ -243,7 +243,7 @@ const categoryManager = {
             while (domCache.categorySelect.options.length > 1) {
                 domCache.categorySelect.remove(1);
             }
-            
+
             const res = await fetch(`${API_CONFIG.baseURL}/public/categories`);
             const categories = await res.json();
 
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('addServiceBtn').addEventListener('click', async () => {
         // 先加载最新分类数据
-        await categoryManager.loadCategories(); 
+        await categoryManager.loadCategories();
         // 然后打开对话框
         new mdui.Dialog('#addServiceDialog').open();
     });
