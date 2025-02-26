@@ -43,21 +43,35 @@ CORS(app, supports_credentials=True)
 # 扩展初始化 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
- 
-# ---------------------------- 数据模型 ----------------------------
+
+# ---------------------------- 分类模型 ----------------------------
+class Category(db.Model):
+    """分类数据模型"""
+    __tablename__ = 'categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+# ---------------------------- 服务模型 ----------------------------
 class Service(db.Model):
     """服务导航数据模型"""
     __tablename__ = 'services'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    category = db.Column(db.String(50), server_default='其他')
+    category = db.relationship(
+        'Category',
+        backref=db.backref('services', lazy='dynamic'),
+        lazy='joined',  # 自动 JOIN 加载关联数据
+    )
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     ip_url = db.Column(db.String(200))  # 新增IP地址字段
     domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
     description = db.Column(db.String(200))
     icon = db.Column(db.String(200))
     sort_order = db.Column(db.Integer, server_default='999')
- 
+    
+
     def to_dict(self):
         return {c.name:  getattr(self, c.name)  for c in self.__table__.columns}
  
@@ -88,21 +102,113 @@ def serve_index():
 # 公开只读端点
 @app.route('/api/public/services', methods=['GET'])
 def public_get_services():
-    """公开获取服务数据（无需认证）"""
+    """公开获取服务数据（支持分类过滤）"""
     try:
-        services = Service.query.order_by(Service.sort_order).all() 
+        category_filter = request.args.get('category')
+        base_query = Service.query.options(db.joinedload(Service.category))
+
+        # 添加分类过滤条件
+        if category_filter and category_filter.lower() != 'all':
+            base_query = base_query.join(Category).filter(
+                db.func.lower(Category.name) == category_filter.lower()
+            )
+
+        services = base_query.order_by(Service.sort_order).all()
+        
         return jsonify([{
             'name': s.name,
-            'category': s.category,
-            'ip_url': s.ip_url,   # 新增字段
-            'domain_url': s.domain_url,   # 替换原url字段
+            'category': s.category.name if s.category else '未分类',
+            'ip_url': s.ip_url,
+            'domain_url': s.domain_url,
             'description': s.description,
-            'icon': s.icon
+            'icon_url': s.icon
         } for s in services])
+        
     except SQLAlchemyError as e:
         app.logger.error(f"数据库查询失败: {str(e)}")
         abort(500)
 
+@app.route('/api/public/categories', methods=['GET'])
+def get_categories():
+    """获取所有分类"""
+    try:
+        categories = Category.query.order_by(Category.id).all()
+        return jsonify([{'id': c.id, 'name': c.name} for c in categories])
+    except SQLAlchemyError as e:
+        app.logger.error(f"分类查询失败: {str(e)}")
+        abort(500)
+
+# ---------------------------- 分类管理API ----------------------------
+@app.route('/api/categories', methods=['POST'])
+def add_category():
+    """添加新分类"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        data = request.get_json()
+        if not data.get('name'):
+            return jsonify(error="分类名称不能为空"), 400
+
+        category = Category(name=data['name'])
+        db.session.add(category)
+        db.session.commit()
+        return jsonify({'id': category.id}), 201
+        
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(error="分类名称已存在"), 409
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"添加分类失败: {str(e)}")
+        abort(500)
+
+@app.route('/api/categories/<int:category_id>', methods=['DELETE'])
+def delete_category(category_id):
+    """删除分类"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        category = Category.query.get_or_404(category_id)
+        
+        # 检查是否有服务关联
+        if Service.query.filter_by(category_id=category_id).first():
+            return jsonify(error="请先删除该分类下的所有服务"), 409
+            
+        db.session.delete(category)
+        db.session.commit()
+        return jsonify(success=True)
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"删除分类失败: {str(e)}")
+        abort(500)
+
+@app.route('/api/categories/<int:category_id>', methods=['PUT'])
+def update_category(category_id):
+    """更新分类信息"""
+    if not session.get('authenticated'):
+        abort(403)
+    
+    try:
+        category = Category.query.get_or_404(category_id)
+        data = request.get_json()
+        
+        if not data.get('name'):
+            return jsonify(error="分类名称不能为空"), 400
+            
+        category.name = data['name']
+        db.session.commit()
+        return jsonify(success=True)
+        
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(error="分类名称已存在"), 409
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"更新分类失败: {str(e)}")
+        abort(500)
 # ---------------------------- 管理API ----------------------------
 @app.route('/api/services',  methods=['GET'])
 def get_services():
@@ -111,7 +217,10 @@ def get_services():
         abort(403)
     try:
         services = Service.query.order_by(Service.sort_order).all() 
-        return jsonify([s.to_dict() for s in services])
+        return jsonify([{
+            **s.to_dict(),
+            'category': s.category.name  # 添加分类名称字段
+        } for s in services])
     except SQLAlchemyError as e:
         app.logger.error(f" 数据库查询失败: {str(e)}")
         abort(500)
@@ -130,7 +239,7 @@ def add_service():
             name=data['name'],
             ip_url=data['ip_url'],
             domain_url=data['domain_url'],
-            category=data.get('category',  '其他'),
+            category_id=data['category_id'],
             sort_order=max_order + 1 
         )
         
@@ -157,7 +266,7 @@ def update_service(service_id):
         service.name  = data.get('name',  service.name) 
         service.ip_url  = data.get('ip_url',  service.ip_url)
         service.domain_url  = data.get('domain_url',  service.domain_url)   # 替换原字段 
-        service.category  = data.get('category',  service.category) 
+        service.category_id = data.get('category_id', service.category_id)
         
         db.session.commit() 
         return jsonify(success=True)
@@ -294,16 +403,23 @@ def init_db():
         db_path = app.config['BASE_DIR']  / 'db'
         db_path.mkdir(exist_ok=True) 
         
-        db.create_all() 
+        db.create_all()
+        
+        # 初始化默认分类
+        default_category = Category.query.filter_by(name="默认").first()
+        if not default_category:
+            default_category = Category(name="默认")
+            db.session.add(default_category)
+            db.session.commit()
         
         # 初始化默认密码 
         if not Auth.query.first(): 
             default_hash = generate_password_hash("admin")
             auth = Auth(password_hash=default_hash)
-            db.session.add(auth) 
-            db.session.commit() 
-            print("[安全警告] 已创建默认密码admin，请立即修改！")
+            db.session.add(auth)
             
+        db.session.commit()
+        print("[安全警告] 已创建默认密码admin，请立即修改！")
         print("数据库初始化完成")
     except Exception as e:
         print(f"初始化失败: {str(e)}")

@@ -4,61 +4,27 @@
     --drag-handle-color: #6c757d;
 }
 
-
-/* 排序容器样式 */
-.sortable-list {
-    min-height: 100px;
-    padding: 0.5rem;
-    border: 2px dashed var(--primary-color);
-    border-radius: 8px;
-    background: #f8f9fa;
-    transition: background-color 0.3s;
-    margin-bottom: 1rem;
-}
-
-/* 排序项基础样式 */
-.sortable-item {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    padding: 0.75rem 1.25rem;
-    margin: 0.5rem 0;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    transition: 
-        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.2s ease;
-    cursor: move;
-    position: relative;
-    
-}
-
-.sortable-drag {
-    opacity: 0.5;
-    transform: scale(0.95);
-}
-
-/* 拖动手柄样式 */
-.sortable-item::before {
-    content: "⠿";
-    color: var(--drag-handle-color);
-    margin-right: 1rem;
-    font-size: 1.2em;
-    cursor: move;
-}
-
-/* 悬停效果 */
-.sortable-item:hover {
-    transform: translateX(5px);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1;
-}
-
 /* 拖动时的幽灵效果 */
 .sortable-ghost {
-    opacity: 0.6;
-    background: #e9ecef;
-    border-style: dashed;
+    opacity: 0.5;
+    background: #f8f9fa;
+}
+
+/* 分类项样式 */
+.mdui-collapse-item-header {
+    padding-left: 24px;
+    border-bottom: 1px solid rgba(0,0,0,.12);
+}
+
+/* 子服务列表缩进 */
+.service-sublist {
+    padding-left: 32px;
+    background: #f5f5f5;
+}
+
+/* 服务项悬停效果 */
+.mdui-list-item:hover {
+    background-color: rgba(0,0,0,.04);
 }
 
 /* 正在拖动的元素样式 */
@@ -121,4 +87,27 @@
     right: 20px;
     z-index: 9999;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* 浮动按钮容器 */
+.mdui-fab-wrapper {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+}
+
+/* 移除之前自定义的 .mdui-speed-dial-item 样式 */
+/* 添加 MDUI 补丁样式 */
+.mdui-fab-wrapper {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+}
+
+/* 修复工具提示位置 */
+.mdui-fab-dial .mdui-tooltip {
+    right: 60px;
+    left: auto !important;
 }
