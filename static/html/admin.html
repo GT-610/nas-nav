@@ -15,12 +15,34 @@
     <!-- 顶部导航 -->
     <div class="mdui-appbar">
         <div class="mdui-toolbar mdui-color-theme">
+            <a class="mdui-btn mdui-btn-icon" id="drawerButton">
+                <i class="mdui-icon material-icons">menu</i>
+            </a>
             <span class="mdui-typo-title">NAS导航管理后台</span>
             <div class="mdui-toolbar-spacer"></div>
             <a href="/" class="mdui-btn mdui-btn-icon" target="_blank">
                 <i class="mdui-icon material-icons">home</i>
             </a>
         </div>
+    </div>
+
+    <!-- 左侧抽屉 -->
+    <div class="mdui-drawer mdui-drawer-close" id="drawer">
+        <ul class="mdui-list">
+            <li class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">home</i>
+                <div class="mdui-list-item-content">返回主页</div>
+            </li>
+            <li class="mdui-divider"></li>
+            <li class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">dashboard</i>
+                <div class="mdui-list-item-content">服务管理</div>
+            </li>
+            <li class="mdui-list-item mdui-ripple">
+                <i class="mdui-list-item-icon mdui-icon material-icons">lock</i>
+                <div class="mdui-list-item-content">修改管理员密码</div>
+            </li>
+        </ul>
     </div>
 
     <!-- 登录容器 -->

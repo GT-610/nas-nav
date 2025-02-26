@@ -381,6 +381,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         new mdui.Dialog('#addServiceDialog').open();
     });
 
+    // 初始化抽屉
+    const drawer = new mdui.Drawer('#drawer');
+
+    // 添加按钮点击事件
+    document.getElementById('drawerButton').addEventListener('click', () => {
+        drawer.toggle();
+    });
+
     // 加载数据
     await authManager.checkAuth();
     await categoryManager.loadCategories();

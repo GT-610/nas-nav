@@ -72,6 +72,11 @@
   width: 100%;
 }
 
+/* 搜索框宽度 */
+.mdui-textfield-expandable {
+  max-width: 300px;
+}
+
 .mdui-spinner {
   width: 48px !important;
   height: 48px !important;
