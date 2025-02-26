@@ -1,42 +1,121 @@
-:root {
-    --primary-color: #1976D2;
-    --secondary-color: #26A69A;
+/* ================= 全局样式 ================= */
+.mdui-theme-layout-dark footer {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.nav-card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-    height: 100%;
+/* ================= 卡片布局 ================= */
+.mdui-card {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.nav-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.mdui-card-media {
+  height: 150px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
 }
 
-.btn-ip {
-    background: var(--primary-color);
-    color: white;
+.mdui-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.btn-link {
-    background: var(--secondary-color);
-    color: white;
+.mdui-card-primary-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.search-box {
-    max-width: 500px;
+.mdui-card-content p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.category-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(25, 118, 210, 0.1);
-    color: var(--primary-color);
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 0.8rem;
+/* ================= 功能组件 ================= */
+/* 离线状态指示 */
+.offline {
+  position: relative;
+  opacity: 0.7;
+}
+
+.offline::after {
+  content: "⚠️ 离线";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ffeb3b;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+/* 按钮组 */
+.mdui-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px !important;
+}
+
+/* 加载指示器 */
+.mdui-spinner-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+  width: 100%;
+}
+
+.mdui-spinner {
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 auto;
+}
+
+.mdui-spinner-layer {
+  border-color: #3f51b5 !important;
+}
+
+/* ================= 表单元素 ================= */
+#searchInput::placeholder {
+  color: #9e9e9e;
+  font-size: 0.9em;
+}
+
+/* ================= 页脚 ================= */
+footer {
+  padding: 20px 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.octicon-mark-github {
+  transition: opacity 0.3s;
+}
+
+.octicon-mark-github:hover {
+  opacity: 0;
+}
+
+/* ================= 响应式设计 ================= */
+@media (max-width: 600px) {
+  .mdui-col-xs-12 {
+    padding: 0 8px;
+    margin-bottom: 16px;
+  }
+
+  .mdui-toolbar {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  #searchInput {
+    width: 100%;
+    margin: 8px 0;
+  }
 }
