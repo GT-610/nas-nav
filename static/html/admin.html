@@ -1,198 +1,185 @@
-<!-- static/html/admin.html  安全增强 -->
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 
 <head>
-    <title>NAS 导航后台管理界面</title>
+    <meta charset="UTF-8">
+    <title>NAS 导航后台管理</title>
+    <!-- MDUI 核心样式 -->
+    <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/css/mdui.min.css">
     <link rel="stylesheet" href="/static/css/admin.css">
-    <link rel="stylesheet" href="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdb-ui-kit/3.10.2/mdb.min.css">
-    <link rel="stylesheet"
-        href="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/bootstrap-icons/1.8.1/font/bootstrap-icons.css">
-    <script src="/static/js/admin.js" defer></script>
-    <script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdb-ui-kit/3.10.2/mdb.min.js"></script>
+    <!-- 排序库 -->
     <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/Sortable/1.14.0/Sortable.min.js"></script>
 </head>
 
-<body>
-    <div id="loginContainer" style="display: flex; justify-content: center;">
-        <nav class="navbar bg-danger">
-            <div class="container">
-                <a class="navbar-brand text-white" href="#">NAS导航后台管理界面</a>
-                <a class="btn btn-light text-danger logout-btn" href="/">返回主页</a>
-            </div>
-        </nav>
-        <div id="loginForm" class="card" style="display: grid; place-items: center;">
-            <div class="card-body">
-                <h5 class="card-title">管理员登录</h5>
-                <form id="loginFormInner">
-                    <div class="mb-3">
-                        <input type="password" class="form-control" id="password" placeholder="请输入管理员密码" required>
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
+    <!-- 顶部导航 -->
+    <div class="mdui-appbar">
+        <div class="mdui-toolbar mdui-color-theme">
+            <span class="mdui-typo-title">NAS导航管理后台</span>
+            <div class="mdui-toolbar-spacer"></div>
+            <a href="/" class="mdui-btn mdui-btn-icon" target="_blank">
+                <i class="mdui-icon material-icons">home</i>
+            </a>
+        </div>
+    </div>
+
+    <!-- 登录容器 -->
+    <div id="loginContainer" class="mdui-container">
+        <!-- 登录表单 -->
+        <div class="mdui-row mdui-m-t-4">
+            <div class="mdui-col-md-6 mdui-col-offset-md-3">
+                <div class="mdui-card">
+                    <div class="mdui-card-header">
+                        <div class="mdui-card-header-title">管理员登录</div>
                     </div>
-                    <button type="submit" class="btn btn-danger w-100">登录</button>
-                </form>
+                    <form id="loginForm" class="mdui-card-content">
+                        <div class="mdui-textfield">
+                            <input class="mdui-textfield-input" type="password" id="password" required />
+                            <label class="mdui-textfield-label">请输入管理员密码</label>
+                        </div>
+                        <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent">
+                            登录
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-    <div id="managementContent" style="display: none;">
-        <!-- 管理界面内容 -->
-        <nav class="navbar bg-danger">
-            <div class="container">
-                <a class="navbar-brand text-white" href="#">NAS导航后台管理界面</a>
-                <div class="ms-auto">
-                    <a class="btn btn-light text-danger" href="#" id="changePasswordBtn">修改密码</a>
-                    <a class="btn btn-light text-danger logout-btn" href="/">返回主页</a>
+
+    <!-- 管理界面 -->
+    <div id="managementContent" style="display:none">
+        <div class="mdui-container mdui-m-t-4">
+            <!-- 服务列表 -->
+            <div class="mdui-card">
+                <div class="mdui-card-header">
+                    <h2 class="mdui-card-header-title">服务管理</h2>
+                </div>
+                <ul id="serviceList" class="mdui-list sortable-list" mdui-collapse>
+                    <!-- 动态内容保持结构不变 -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="mdui-fab-wrapper" id="addFab" mdui-fab="{trigger: 'hover'}">
+            <button class="mdui-fab mdui-ripple mdui-color-theme-accent">
+                <!-- 默认显示的图标 -->
+                <i class="mdui-icon material-icons">add</i>
+                <!-- 在拨号菜单开始打开时，平滑切换到关闭图标 -->
+                <i class="mdui-icon mdui-fab-opened material-icons">close</i>
+            </button>
+            <div class="mdui-fab-dial">
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-pink"
+                    mdui-tooltip="{content: '添加服务', position: 'left'}" id="addServiceBtn">
+                    <i class="mdui-icon material-icons">add</i>
+                </button>
+                <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-red"
+                    mdui-tooltip="{content: '添加分类', position: 'left'}" id="addCategoryBtn">
+                    <i class="mdui-icon material-icons">add_to_photos</i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 模态对话框 -->
+        <div class="mdui-dialog" id="editServiceDialog">
+            <div class="mdui-dialog-title">编辑服务</div>
+            <div class="mdui-dialog-content">
+                <form id="editForm">
+                    <!-- 表单内容 -->
+                </form>
+            </div>
+            <div class="mdui-dialog-actions">
+                <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+                <button type="submit" class="mdui-btn mdui-ripple">保存</button>
+            </div>
+        </div>
+
+        <!-- 分类对话框 -->
+        <div class="mdui-dialog" id="addCategoryDialog">
+            <div class="mdui-dialog-title">新增分类</div>
+            <div class="mdui-dialog-content">
+                <form id="addCategoryForm">
+                    <div class="mdui-textfield mdui-textfield-floating-label">
+                        <label class="mdui-textfield-label">分类名称</label>
+                        <input class="mdui-textfield-input" type="text" name="categoryName" required />
+
+                    </div>
+                </form>
+            </div>
+            <div class="mdui-dialog-actions">
+                <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+                <button type="button" id="submitCategoryBtn" class="mdui-btn mdui-ripple mdui-color-theme"
+                    mdui-dialog-confirm>创建</button>
+            </div>
+        </div>
+
+        <!-- 新增服务对话框 -->
+        <div class="mdui-dialog" id="addServiceDialog">
+            <div class="mdui-dialog-title">新增服务</div>
+            <div class="mdui-dialog-content">
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">服务名称</label>
+                    <input class="mdui-textfield-input" type="text" name="name" required />
+                </div>
+                <!-- 新增以下字段 -->
+                <select class="mdui-select" name="category_id" id="categorySelect" mdui-select required>
+                    <option value="" disabled selected>选择分类</option>
+                </select>
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">IP地址</label>
+                    <input class="mdui-textfield-input" type="text" name="ip_url" required />
+
+                </div>
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">域名地址</label>
+                    <input class="mdui-textfield-input" type="url" name="domain_url" required />
+                </div>
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">服务描述（可选）</label>
+                    <textarea class="mdui-textfield-input" name="description"></textarea>
+                </div>
+                <div class="mdui-dialog-actions">
+                    <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
+                    <button type="button" id="submitServiceBtn" class="mdui-btn mdui-ripple"
+                        mdui-dialog-confirm>创建</button>
                 </div>
             </div>
-        </nav>
 
-        <div class="container mt-4">
-            <div class="card-body">
-                <form id="addForm" class="row g-3">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="name" placeholder="服务名称" required>
+            <!-- 分类列表模板 -->
+            <template id="categoryItemTemplate">
+                <li class="mdui-collapse-item">
+                    <div class="mdui-collapse-item-header mdui-list-item mdui-ripple">
+                        <i class="mdui-icon material-icons">folder_open</i>
+                        <div class="mdui-list-item-content">
+                            <div class="category-name mdui-text-color-theme-text"></div>
+                        </div>
+                        <i class="mdui-collapse-item-arrow mdui-icon material-icons">keyboard_arrow_down</i>
                     </div>
-                    <div class="col-md-6">
-                        <input type="url" class="form-control" name="ip_url" placeholder="IP地址URL" required>
+                    <ul class="mdui-collapse-item-body mdui-list service-sublist"></ul>
+                </li>
+            </template>
+
+            <!-- 服务项模板 -->
+            <template id="serviceItemTemplate">
+                <li class="mdui-list-item mdui-ripple">
+                    <div class="mdui-list-item-content">
+                        <div class="service-name"></div>
+                        <div class="mdui-list-item-text mdui-text-truncate service-description"></div>
                     </div>
-                    <div class="col-md-6">
-                        <input type="url" class="form-control" name="domain_url" placeholder="域名URL" required>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-plus-lg"></i> 添加
+                    <div class="mdui-list-item-action">
+                        <button class="mdui-btn mdui-btn-icon mdui-text-color-theme-accent edit-btn">
+                            <i class="mdui-icon material-icons">edit</i>
+                        </button>
+                        <button class="mdui-btn mdui-btn-icon mdui-text-color-red delete-btn">
+                            <i class="mdui-icon material-icons">delete</i>
                         </button>
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" name="category">
-                            <option value="常用">常用</option>
-                            <option value="开发">开发</option>
-                            <option value="媒体">媒体</option>
-                            <option value="其他">其他</option>
-                        </select>
-                    </div>
-                    <div class="col-md-9">
-                        <input type="url" class="form-control" name="icon" placeholder="图标URL (可选)">
-                    </div>
-                </form>
-            </div>
-
-            <!-- 服务列表管理 -->
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5>服务排序管理</h5>
-                    <small class="fst-italic">拖动项目进行排序</small>
-                    <div class="card-body">
-                        <ul id="serviceList" class="list-group sortable-list">
-                            <!-- 动态加载服务项 -->
-                        </ul>
-                    </div>
-                </div>
-            </div>
+                </li>
+            </template>
         </div>
-        <template id="serviceItemTemplate">
-            <li class="list-group-item sortable-item d-flex justify-content-between align-items-center"
-                data-id="placeholder">
-                <div class="flex-grow-1">
-                    <span class="badge bg-primary me-2">#placeholder</span>
-                    <span class="service-name">placeholder</span>
-                    <small class="text-muted ms-2 service-category">placeholder</small>
-                </div>
-                <button class="btn btn-link edit-btn text-primary" data-id="placeholder">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-link delete-btn text-danger" data-id="placeholder">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </li>
-        </template>
     </div>
-
+    <!-- MDUI JS -->
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>
+    <script src="/static/js/admin.js"></script>
 </body>
-
-<!-- 成功提示容器 -->
-<div id="successAlert" class="alert alert-success alert-dismissible fade fixed-top m-3" role="alert"
-    style="display: none; max-width: 400px; right: 0; left: auto;">
-    操作成功！
-    <button type="button" class="close" data-dismiss="alert"></button>
-</div>
-
-<!-- 失败提示容器 -->
-<div id="failAlert" class="alert alert-danger alert-dismissible fade fixed-top m-3" role="alert"
-    style="display: none; max-width: 400px; right: 0; left: auto;">
-    操作失败。
-    <button type="button" class="close" data-dismiss="alert"></button>
-</div>
-
-<!-- 编辑模态框 -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">编辑服务</h5>
-            </div>
-            <form id="editForm">
-                <div class="modal-body">
-                    <input type="hidden" id="editId">
-                    <div class="mb-3">
-                        <label class="form-label">服务名称</label>
-                        <input type="text" class="form-control" id="editName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">分类</label>
-                        <select class="form-select" id="editCategory">
-                            <option value="常用">常用</option>
-                            <option value="开发">开发</option>
-                            <option value="媒体">媒体</option>
-                            <option value="其他">其他</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">IP地址URL</label>
-                        <input type="url" class="form-control" id="editIpUrl" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">域名URL</label>
-                        <input type="url" class="form-control" id="editDomainUrl" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary">保存更改</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- 修改密码模态框 -->
-<div class="modal fade" id="changePasswordModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">修改密码</h5>
-            </div>
-            <form id="changePasswordForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">原密码</label>
-                        <input type="password" class="form-control" id="oldPassword" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">新密码</label>
-                        <input type="password" class="form-control" id="newPassword" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">确认新密码</label>
-                        <input type="password" class="form-control" id="confirmNewPassword" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-success">确认</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 </html>
