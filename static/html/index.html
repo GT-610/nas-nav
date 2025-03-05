@@ -45,11 +45,11 @@
         <!-- 分类过滤 -->
         <div class="mdui-tab" mdui-tab id="categoryTab">
             <a href="?category=all{% if search_term %}&search={{ search_term }}{% endif %}" 
-               class="mdui-ripple mdui-ripple-white {% if current_category == 'all' %}active{% endif %}"
+               class="mdui-ripple {% if current_category == 'all' %}active{% endif %}"
                data-category="all">全部</a>
             {% for category in categories %}
             <a href="?category={{ category.name|lower }}{% if search_term %}&search={{ search_term }}{% endif %}" 
-               class="mdui-ripple mdui-ripple-white {% if current_category|lower == category.name|lower %}active{% endif %}"
+               class="mdui-ripple {% if current_category|lower == category.name|lower %}active{% endif %}"
                data-category="{{ category.name|lower }}">
                 {{ category.name }}
             </a>
