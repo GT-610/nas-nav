@@ -44,41 +44,73 @@
     <div class="mdui-container mdui-m-t-4">
         <!-- 分类过滤 -->
         <div class="mdui-tab" mdui-tab id="categoryTab">
+            <a href="?category=all{% if search_term %}&search={{ search_term }}{% endif %}" 
+               class="mdui-ripple mdui-ripple-white {% if current_category == 'all' %}active{% endif %}"
+               data-category="all">全部</a>
+            {% for category in categories %}
+            <a href="?category={{ category.name|lower }}{% if search_term %}&search={{ search_term }}{% endif %}" 
+               class="mdui-ripple mdui-ripple-white {% if current_category|lower == category.name|lower %}active{% endif %}"
+               data-category="{{ category.name|lower }}">
+                {{ category.name }}
+            </a>
+            {% endfor %}
         </div>
 
-        <!-- 新增卡片模板 -->
-        <template id="cardTemplate">
+        {% if search_term %}
+        <div class="mdui-typo mdui-m-b-2">
+            <strong>搜索关键词：</strong>"{{ search_term }}"
+            <a href="/" class="mdui-btn mdui-btn-dense mdui-color-pink-50">清除搜索</a>
+        </div>
+        {% endif %}
+
+        <!-- 添加空状态提示 -->
+        {% if not services %}
+        <div class="mdui-typo mdui-m-y-4">
+            <div class="mdui-text-center mdui-text-color-theme-secondary">
+                <i class="material-icons mdui-icon material-icons">search_off</i>
+                <p class="mdui-m-t-2">没有找到匹配的服务</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 导航卡片容器 -->
+        <div id="cardContainer" class="mdui-row">
+            {% for service in services %}
             <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
                 <div class="mdui-card mdui-hoverable">
+                    {% if service.icon_url %}
                     <div class="mdui-card-media">
-                        <img class="card-icon" src="" alt="服务图标" />
+                        <img class="card-icon" src="{{ service.icon_url }}" alt="服务图标" />
                     </div>
+                    {% endif %}
                     <div class="mdui-card-primary">
-                        <div class="card-title mdui-card-primary-title"></div>
-                        <div class="card-category mdui-card-primary-subtitle"></div>
+                        <div class="card-title mdui-card-primary-title">{{ service.name }}</div>
+                        <div class="card-category mdui-card-primary-subtitle">
+                            {{ service.category.name if service.category else '未分类' }}
+                        </div>
                     </div>
+                    {% if service.description %}
                     <div class="mdui-card-content">
-                        <p class="card-description mdui-typo"></p>
+                        <p class="card-description mdui-typo">{{ service.description }}</p>
                     </div>
+                    {% endif %}
                     <div class="mdui-card-actions">
-                        <a href="#" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
+                        <a href="{{ service.domain_url }}" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
                             <i class="mdui-icon material-icons">public</i>域名访问
                         </a>
-                        <a href="#" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
+                        <a href="{{ service.ip_url }}" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
                             <i class="mdui-icon material-icons">lan</i>内网访问
                         </a>
                     </div>
                 </div>
             </div>
-        </template>
-
-        <!-- 导航卡片容器 -->
-        <div id="cardContainer" class="mdui-row"></div>
+            {% endfor %}
+        </div>
 
         <!-- 底部标签 -->
         <footer class="mdui-m-t-5 mdui-text-center mdui-typo-caption-opacity">
             <div class="mdui-typo">
-                nas-nav v0.3.0
+                nas-nav v0.4.0
                 <a href="https://github.com/GT-610/nas-nav" target="_blank" class="mdui-btn mdui-btn-icon"
                     style="vertical-align: middle;">
                     <svg height="18" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="18"

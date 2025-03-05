@@ -1,23 +1,28 @@
-# 标准库导入 
-import os 
-import secrets 
-from datetime import timedelta 
-from pathlib import Path 
- 
-# 第三方库导入 
+import os
+import secrets
+from datetime import timedelta
+from pathlib import Path
+
+# 第三方库导入
 from flask import (
-    Flask, jsonify, request, session, 
-    abort, redirect, send_from_directory 
+    Flask, jsonify, request, session,
+    abort, redirect, send_from_directory,
+    render_template
 )
-from flask_sqlalchemy import SQLAlchemy 
-from flask_migrate import Migrate 
-from flask_cors import CORS 
-from werkzeug.security  import generate_password_hash, check_password_hash 
-from sqlalchemy.sql import text
-from sqlalchemy.exc  import IntegrityError, SQLAlchemyError 
+from flask_migrate import Migrate
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# 导入自定义的数据库模块
+from database import db, init_db, validate_password_complexity
+from database import Service, Category, Auth
+from flask_sqlalchemy import SQLAlchemy
  
 # ---------------------------- 应用初始化 ----------------------------
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, 
+    template_folder='static/html',  # 指定模板目录 
+    static_folder='static'
+)
  
 # 配置类 
 class Config:
@@ -41,62 +46,45 @@ app.config.from_object(Config)
 CORS(app, supports_credentials=True)
  
 # 扩展初始化 
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 
-# ---------------------------- 分类模型 ----------------------------
-class Category(db.Model):
-    """分类数据模型"""
-    __tablename__ = 'categories'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-
-# ---------------------------- 服务模型 ----------------------------
-class Service(db.Model):
-    """服务导航数据模型"""
-    __tablename__ = 'services'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
-    category = db.relationship(
-        'Category',
-        backref=db.backref('services', lazy='dynamic'),
-        lazy='joined',  # 自动 JOIN 加载关联数据
-    )
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
-    ip_url = db.Column(db.String(200))  # 新增IP地址字段
-    domain_url = db.Column(db.String(200), nullable=False)  # 原url改为域名字段
-    description = db.Column(db.String(200))
-    icon = db.Column(db.String(200))
-    sort_order = db.Column(db.Integer, server_default='999')
-    
-
-    def to_dict(self):
-        return {c.name:  getattr(self, c.name)  for c in self.__table__.columns}
- 
-class Auth(db.Model):
-    """认证数据模型"""
-    __tablename__ = 'auth'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    password_hash = db.Column(db.String(128), nullable=False)
- 
-# ---------------------------- 工具函数 ----------------------------
-def validate_password_complexity(password):
-    """密码复杂度验证"""
-    if len(password) < 8:
-        raise ValueError("后端提示：密码长度至少8位")
-    if not any(c.isupper()  for c in password):
-        raise ValueError("后端提示：必须包含至少一个大写字母")
-    if not any(c.isdigit()  for c in password):
-        raise ValueError("后端提示：必须包含至少一个数字")
- 
 # ---------------------------- 路由处理 ----------------------------
-@app.route('/') 
+@app.route('/')
 def serve_index():
-    """主页面路由"""
-    return send_from_directory(app.static_folder,  'html/index.html') 
+    """完全服务端渲染的主页"""
+    # 获取过滤参数
+    category_filter = request.args.get('category', 'all')
+    search_term = request.args.get('search', '').lower()
+
+    # 基础查询
+    query = Service.query.options(db.joinedload(Service.category))
+
+    # 分类过滤
+    if category_filter.lower() != 'all':
+        query = query.join(Category).filter(
+            db.func.lower(Category.name) == category_filter.lower()
+        )
+
+    # 搜索过滤（名称或描述）
+    if search_term:
+        query = query.filter(
+            db.or_(
+                Service.name.ilike(f'%{search_term}%'),
+                Service.description.ilike(f'%{search_term}%')
+            )
+        )
+
+    services = query.order_by(Service.sort_order).all()
+    categories = Category.query.order_by(Category.id).all()
+
+    return render_template(
+        'index.html',
+        categories=categories,
+        services=services,
+        current_category=category_filter,
+        search_term=search_term
+    )
 
 # ---------------------------- 公共API ----------------------------
 # 公开只读端点
@@ -396,33 +384,11 @@ def internal_error(e):
     return jsonify(error="服务器内部错误"), 500 
  
 # ---------------------------- CLI命令 ----------------------------
-@app.cli.command('init-db') 
-def init_db():
+@app.cli.command('init-db')
+def init_db_command():
     """初始化数据库"""
-    try:
-        db_path = app.config['BASE_DIR']  / 'db'
-        db_path.mkdir(exist_ok=True) 
-        
-        db.create_all()
-        
-        # 初始化默认分类
-        default_category = Category.query.filter_by(name="默认").first()
-        if not default_category:
-            default_category = Category(name="默认")
-            db.session.add(default_category)
-            db.session.commit()
-        
-        # 初始化默认密码 
-        if not Auth.query.first(): 
-            default_hash = generate_password_hash("admin")
-            auth = Auth(password_hash=default_hash)
-            db.session.add(auth)
-            
-        db.session.commit()
-        print("[安全警告] 已创建默认密码admin，请立即修改！")
-        print("数据库初始化完成")
-    except Exception as e:
-        print(f"初始化失败: {str(e)}")
+    with app.app_context():
+        init_db(app)
  
 if __name__ == '__main__':
     app.run(host='0.0.0.0',  port=5000)
