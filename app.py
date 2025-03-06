@@ -86,45 +86,42 @@ def serve_index():
         search_term=search_term
     )
 
-# ---------------------------- 公共API ----------------------------
-# 公开只读端点
-@app.route('/api/public/services', methods=['GET'])
-def public_get_services():
-    """公开获取服务数据（支持分类过滤）"""
-    try:
-        category_filter = request.args.get('category')
-        base_query = Service.query.options(db.joinedload(Service.category))
+# ---------------------------- 服务卡片API ----------------------------
+@app.route('/api/card-content')
+def card_content():
+    """返回服务卡片的内容"""
+    # 获取过滤参数
+    category_filter = request.args.get('category', 'all')
+    search_term = request.args.get('search', '').lower()
 
-        # 添加分类过滤条件
-        if category_filter and category_filter.lower() != 'all':
-            base_query = base_query.join(Category).filter(
-                db.func.lower(Category.name) == category_filter.lower()
+    # 基础查询
+    query = Service.query.options(db.joinedload(Service.category))
+
+    # 分类过滤
+    if category_filter.lower() != 'all':
+        query = query.join(Category).filter(
+            db.func.lower(Category.name) == category_filter.lower()
+        )
+
+    # 搜索过滤（名称或描述）
+    if search_term:
+        query = query.filter(
+            db.or_(
+                Service.name.ilike(f'%{search_term}%'),
+                Service.description.ilike(f'%{search_term}%')
             )
+        )
 
-        services = base_query.order_by(Service.sort_order).all()
-        
-        return jsonify([{
-            'name': s.name,
-            'category': s.category.name if s.category else '未分类',
-            'ip_url': s.ip_url,
-            'domain_url': s.domain_url,
-            'description': s.description,
-            'icon_url': s.icon
-        } for s in services])
-        
-    except SQLAlchemyError as e:
-        app.logger.error(f"数据库查询失败: {str(e)}")
-        abort(500)
+    services = query.order_by(Service.sort_order).all()
+    categories = Category.query.order_by(Category.id).all()
 
-@app.route('/api/public/categories', methods=['GET'])
-def get_categories():
-    """获取所有分类"""
-    try:
-        categories = Category.query.order_by(Category.id).all()
-        return jsonify([{'id': c.id, 'name': c.name} for c in categories])
-    except SQLAlchemyError as e:
-        app.logger.error(f"分类查询失败: {str(e)}")
-        abort(500)
+    return render_template(
+        'sub-pages/card_container.html',
+        categories=categories,
+        services=services,
+        current_category=category_filter,
+        search_term=search_term
+    )
 
 # ---------------------------- 分类管理API ----------------------------
 @app.route('/api/categories', methods=['POST'])

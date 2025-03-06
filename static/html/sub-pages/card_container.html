@@ -1,0 +1,42 @@
+<!-- static/html/sub-pages/card_container.html -->
+<div id="cardContainer" class="mdui-row">
+    {% for service in services %}
+    <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
+        <div class="mdui-card mdui-hoverable">
+            {% if service.icon_url %}
+            <div class="mdui-card-media">
+                <img class="card-icon" src="{{ service.icon_url }}" alt="服务图标" />
+            </div>
+            {% endif %}
+            <div class="mdui-card-primary">
+                <div class="card-title mdui-card-primary-title">{{ service.name }}</div>
+                <div class="card-category mdui-card-primary-subtitle">
+                    {{ service.category.name if service.category else '未分类' }}
+                </div>
+            </div>
+            {% if service.description %}
+            <div class="mdui-card-content">
+                <p class="card-description mdui-typo">{{ service.description }}</p>
+            </div>
+            {% endif %}
+            <div class="mdui-card-actions">
+                <a href="{{ service.domain_url }}" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
+                    <i class="mdui-icon material-icons">public</i>域名访问
+                </a>
+                <a href="{{ service.ip_url }}" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
+                    <i class="mdui-icon material-icons">lan</i>内网访问
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not services %}
+<div class="mdui-typo mdui-m-y-4">
+    <div class="mdui-text-center mdui-text-color-theme-secondary">
+        <i class="material-icons mdui-icon material-icons">search_off</i>
+        <p class="mdui-m-t-2">没有找到匹配的服务</p>
+    </div>
+</div>
+{% endif %}

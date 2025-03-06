@@ -64,15 +64,33 @@ function handleLoadingError(error) {
 }
 
 // 初始化加载 
-document.addEventListener('DOMContentLoaded', async () => {
-    // 服务端已渲染时跳过初始加载
-    if (document.querySelector('#cardContainer').children.length === 0) {
-        await initFilters();
-        const urlParams = new URLSearchParams(window.location.search);
-        const initialCategory = urlParams.get('category') || 'all';
-        loadServices(initialCategory);
+document.addEventListener('DOMContentLoaded', function () {
+    const tabContainer = document.getElementById('categoryTab');
+    const cardContent = document.getElementById('cardContent');
+
+    function loadContent(category, search) {
+        fetch(`/api/card-content?category=${encodeURIComponent(category)}&search=${encodeURIComponent(search || '')}`)
+            .then(response => response.text())
+            .then(data => {
+                cardContent.innerHTML = data;
+            })
+            .catch(error => {
+                console.error('加载内容失败:', error);
+            });
     }
-    
-    // 绑定事件（兼容服务端渲染的HTML）
-    bindFilterEvents();
+
+    // 绑定分类点击事件
+    tabContainer.addEventListener('click', function (event) {
+        if (event.target.tagName === 'A') {
+            event.preventDefault();
+            const category = event.target.dataset.category;
+            const search = new URLSearchParams(window.location.search).get('search');
+            loadContent(category, search);
+        }
+    });
+
+    // 页面加载时默认加载“全部”分类的内容
+    const initialCategory = new URLSearchParams(window.location.search).get('category') || 'all';
+    const initialSearch = new URLSearchParams(window.location.search).get('search') || '';
+    loadContent(initialCategory, initialSearch);
 });

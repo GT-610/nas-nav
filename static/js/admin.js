@@ -77,7 +77,7 @@ const serviceManager = {
     renderServices: async function (services) {
         try {
             // 获取所有分类（包含空分类）
-            const categoriesRes = await fetch(`${API_CONFIG.baseURL}/public/categories`);
+            const categoriesRes = await fetch(`${API_CONFIG.baseURL}/categories`);
             const allCategories = await categoriesRes.json();
 
             const categoryTemplate = document.getElementById('categoryItemTemplate').content;
