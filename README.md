@@ -65,7 +65,7 @@ Web UI: `/`
 API Base: `/api/`
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 Copyright © 2025 GT610
 
