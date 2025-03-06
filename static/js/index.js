@@ -1,7 +1,26 @@
 // 缓存常用 DOM 元素
 const domCache = {
-    searchInput: document.getElementById('searchInput')
+    searchInput: document.getElementById('searchInput'),
+    cardContent: document.getElementById('cardContent'),
+    clearSearch: document.getElementById('clearSearch')
 };
+
+// 防抖函数
+function debounce(fn, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// 更新URL状态
+function updateURLParams(category, searchTerm) {
+    const params = new URLSearchParams();
+    if (category && category !== 'all') params.set('category', category);
+    if (searchTerm) params.set('search', searchTerm);
+    window.history.replaceState({}, '', `?${params.toString()}`);
+}
 
 // 安全地转义 HTML
 function escapeHtml(unsafe) {
@@ -79,13 +98,25 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    domCache.searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.trim();
+        const currentCategory = document.querySelector('#categoryTab .active').dataset.category;
+        loadContent(currentCategory, searchTerm);
+    });
+
+    // 清除搜索按钮
+    domCache.clearSearch.addEventListener('click', () => {
+        domCache.searchInput.value = '';
+        const currentCategory = document.querySelector('#categoryTab .active').dataset.category;
+        loadContent(currentCategory, '');
+    });
+
     // 绑定分类点击事件
-    tabContainer.addEventListener('click', function (event) {
-        if (event.target.tagName === 'A') {
-            event.preventDefault();
-            const category = event.target.dataset.category;
-            const search = new URLSearchParams(window.location.search).get('search');
-            loadContent(category, search);
+    document.getElementById('categoryTab').addEventListener('click', (e) => {
+        if (e.target.tagName === 'A') {
+            const category = e.target.dataset.category;
+            const searchTerm = domCache.searchInput.value.trim();
+            loadContent(category, searchTerm);
         }
     });
 
