@@ -1,0 +1,42 @@
+:root {
+    --primary-color: #1976D2;
+    --secondary-color: #26A69A;
+}
+
+.nav-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    height: 100%;
+}
+
+.nav-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-ip {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-link {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.search-box {
+    max-width: 500px;
+}
+
+.category-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(25, 118, 210, 0.1);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}

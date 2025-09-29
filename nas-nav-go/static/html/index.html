@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAS导航中心</title>
+    <!-- CSS -->
+    <link href="https://s4.zstatic.net/ajax/libs/mdbootstrap/4.20.0/css/mdb.min.css"  rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/index.css"> 
+    <!-- JS -->
+     <script src="https://s4.zstatic.net/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://s4.zstatic.net/ajax/libs/mdbootstrap/4.20.0/js/mdb.min.js"></script> 
+    <script src="/static/js/index.js"  defer></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar bg-primary">
+        <div class="container">
+            <a class="navbar-brand text-white" href="#">NAS导航</a>
+            <div class="d-flex align-items-center">
+                <input type="search" class="form-control search-box" placeholder="搜索服务..." id="searchInput">
+            <!-- 新增的“试用新版”按钮 -->
+            <a href="/static/next/html/index.html" class="btn btn-light ms-2" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">试用新版</a>
+            <a href="/admin" class="btn btn-light ms-2" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">管理界面</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="container mt-4">
+        <!-- 分类过滤 -->
+        <div class="mb-4" id="categoryFilter">
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-primary active" data-category="all">全部</button>
+                <button class="btn btn-outline-primary" data-category="media">媒体</button>
+                <button class="btn btn-outline-primary" data-category="tools">工具</button>
+                <button class="btn btn-outline-primary" data-category="system">系统</button>
+            </div>
+        </div>
+
+        <!-- 导航卡片容器 -->
+        <div class="row g-4" id="cardContainer">
+        </div>
+    </div>
+</body>
+</html>

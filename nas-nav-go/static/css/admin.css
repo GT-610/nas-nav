@@ -1,0 +1,124 @@
+:root {
+    --primary-color: #ffc107;
+    --secondary-color: #004080;
+    --drag-handle-color: #6c757d;
+}
+
+
+/* 排序容器样式 */
+.sortable-list {
+    min-height: 100px;
+    padding: 0.5rem;
+    border: 2px dashed var(--primary-color);
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: background-color 0.3s;
+    margin-bottom: 1rem;
+}
+
+/* 排序项基础样式 */
+.sortable-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    padding: 0.75rem 1.25rem;
+    margin: 0.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: 
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.2s ease;
+    cursor: move;
+    position: relative;
+    
+}
+
+.sortable-drag {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+/* 拖动手柄样式 */
+.sortable-item::before {
+    content: "⠿";
+    color: var(--drag-handle-color);
+    margin-right: 1rem;
+    font-size: 1.2em;
+    cursor: move;
+}
+
+/* 悬停效果 */
+.sortable-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+}
+
+/* 拖动时的幽灵效果 */
+.sortable-ghost {
+    opacity: 0.6;
+    background: #e9ecef;
+    border-style: dashed;
+}
+
+/* 正在拖动的元素样式 */
+.sortable-chosen {
+    background: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 按钮样式 */
+.edit-btn, .delete-btn {
+    padding: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+    opacity: 0.7;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .sortable-item {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .sortable-item::before {
+        margin-right: 0.5rem;
+    }
+}
+
+/* 卡片布局增强 */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 表单元素间距调整 */
+.form-control, .form-select {
+    margin-bottom: 0.5rem;
+}
+
+/* 提示动画 */
+.fade {
+    transition: opacity 0.15s linear;
+}
+.fade:not(.show) {
+    opacity: 0;
+}
+
+/* 定位优化 */
+.fixed-top {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

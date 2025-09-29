@@ -1,0 +1,113 @@
+:root {
+    --primary-color: #ffc107;
+    --secondary-color: #004080;
+    --drag-handle-color: #6c757d;
+}
+
+/* 拖动时的幽灵效果 */
+.sortable-ghost {
+    opacity: 0.5;
+    background: #f8f9fa;
+}
+
+/* 分类项样式 */
+.mdui-collapse-item-header {
+    padding-left: 24px;
+    border-bottom: 1px solid rgba(0,0,0,.12);
+}
+
+/* 子服务列表缩进 */
+.service-sublist {
+    padding-left: 32px;
+    background: #f5f5f5;
+}
+
+/* 服务项悬停效果 */
+.mdui-list-item:hover {
+    background-color: rgba(0,0,0,.04);
+}
+
+/* 正在拖动的元素样式 */
+.sortable-chosen {
+    background: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 按钮样式 */
+.edit-btn, .delete-btn {
+    padding: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+    opacity: 0.7;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .sortable-item {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .sortable-item::before {
+        margin-right: 0.5rem;
+    }
+}
+
+/* 卡片布局增强 */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 表单元素间距调整 */
+.form-control, .form-select {
+    margin-bottom: 0.5rem;
+}
+
+/* 提示动画 */
+.fade {
+    transition: opacity 0.15s linear;
+}
+.fade:not(.show) {
+    opacity: 0;
+}
+
+/* 定位优化 */
+.fixed-top {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* 浮动按钮容器 */
+.mdui-fab-wrapper {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+}
+
+/* 移除之前自定义的 .mdui-speed-dial-item 样式 */
+/* 添加 MDUI 补丁样式 */
+.mdui-fab-wrapper {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+}
+
+/* 修复工具提示位置 */
+.mdui-fab-dial .mdui-tooltip {
+    right: 60px;
+    left: auto !important;
+}
