@@ -110,7 +110,28 @@ const serviceManager = {
     
                 // 生成服务项（即使为空也保留分类）
                 category.services.forEach(service => {
-                    // ... 原有服务项生成逻辑 ...
+                    const serviceClone = document.importNode(serviceTemplate, true);
+                    const serviceItem = serviceClone.querySelector('.mdui-list-item');
+                    
+                    // 设置服务项数据属性
+                    serviceItem.setAttribute('data-id', service.id);
+                    serviceItem.setAttribute('data-sort-order', service.sort_order);
+                    
+                    // 设置服务名称和描述
+                    serviceClone.querySelector('.service-name').textContent = service.name;
+                    serviceClone.querySelector('.service-description').textContent = service.description || '无描述';
+                    
+                    // 添加编辑和删除按钮事件
+                    serviceClone.querySelector('.edit-btn').addEventListener('click', () => {
+                        // 暂时隐藏编辑功能，直到修复完成
+                        utils.showSnackbar('编辑功能正在开发中', 'warning');
+                    });
+                    
+                    serviceClone.querySelector('.delete-btn').addEventListener('click', () => {
+                        serviceManager.deleteService(service.id);
+                    });
+                    
+                    sublist.appendChild(serviceClone);
                 });
     
                 // 添加空分类提示
@@ -143,7 +164,7 @@ const serviceManager = {
         });
     },
 
-    handleAddSubmit: async () => {
+    handleAddSubmit: async function() {
         const formData = {
             name: document.querySelector('#addServiceDialog [name="name"]').value.trim(),
             ip_url: document.querySelector('#addServiceDialog [name="ip_url"]').value.trim(),
@@ -168,7 +189,16 @@ const serviceManager = {
 
             if (response.ok) {
                 utils.showSnackbar('服务添加成功');
-                await this.loadServices(); // 刷新服务列表
+                // 关闭对话框
+                const dialog = new mdui.Dialog('#addServiceDialog');
+                dialog.close();
+                // 重置表单
+                document.querySelector('#addServiceDialog [name="name"]').value = '';
+                document.querySelector('#addServiceDialog [name="ip_url"]').value = '';
+                document.querySelector('#addServiceDialog [name="domain_url"]').value = '';
+                document.querySelector('#addServiceDialog [name="description"]').value = '';
+                // 刷新服务列表
+                await serviceManager.loadServices();
             } else {
                 throw new Error(result.error || '添加服务失败');
             }
@@ -264,7 +294,7 @@ const categoryManager = {
         }
     },
 
-    handleCategorySubmit: async () => {
+    handleCategorySubmit: async function() {
         const categoryName = document.querySelector('#addCategoryForm [name="categoryName"]').value.trim();
         if (!categoryName) return utils.showSnackbar('分类名称不能为空', 'warning');
 
@@ -279,8 +309,14 @@ const categoryManager = {
 
             if (response.ok) {
                 utils.showSnackbar('分类添加成功');
-                await categoryManager.loadCategories();  // 刷新分类列表
-                await serviceManager.loadServices();     // 刷新服务列表
+                // 关闭对话框
+                const dialog = new mdui.Dialog('#addCategoryDialog');
+                dialog.close();
+                // 重置表单
+                document.querySelector('#addCategoryForm [name="categoryName"]').value = '';
+                // 刷新分类列表和服务列表
+                await categoryManager.loadCategories();
+                await serviceManager.loadServices();
             } else {
                 throw new Error(result.error || '添加失败');
             }

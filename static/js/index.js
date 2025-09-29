@@ -1,17 +1,30 @@
 // 缓存常用 DOM 元素
-const domCache = {
-    container: document.getElementById('cardContainer'),
-    template: document.getElementById('cardTemplate'),
-    tabContainer: document.getElementById('categoryTab'),
-    searchInput: document.getElementById('searchInput')
-};
+let domCache = {};
+
+// 初始化DOM缓存
+function initDomCache() {
+    domCache = {
+        container: document.getElementById('cardContainer'),
+        template: document.getElementById('cardTemplate'),
+        tabContainer: document.getElementById('categoryTab'),
+        searchInput: document.getElementById('searchInput')
+    };
+    return domCache;
+}
 
 // 加载服务列表
 async function loadServices() {
     try {
+        // 确保DOM缓存已初始化
+        initDomCache();
+        
+        if (!domCache.container) {
+            throw new Error('未找到卡片容器元素');
+        }
+        
         domCache.container.innerHTML = '<div class="loading-shimmer mdui-col-xs-12">加载中...</div>'.repeat(6);
         
-        const [servicesResponse, _] = await Promise.all([
+        const [servicesResponse] = await Promise.all([
             fetch('/api/public/services'),
             initFilters() // 保持并行加载
         ]);
@@ -104,6 +117,15 @@ async function loadCategories() {
 // 初始化过滤函数
 async function initFilters() {
     try {
+        // 确保DOM缓存已初始化
+        const cache = initDomCache();
+        
+        // 检查tabContainer是否存在
+        if (!cache.tabContainer) {
+            console.warn('未找到分类标签容器');
+            return;
+        }
+        
         const categories = await loadCategories();
         if (!categories.length) {
             console.warn('未获取到分类数据');
@@ -111,63 +133,81 @@ async function initFilters() {
         }
 
         const fragment = document.createDocumentFragment();
+        // 保留"全部"标签
+        const allTab = document.createElement('a');
+        allTab.href = '#tab-all';
+        allTab.className = 'mdui-ripple mdui-ripple-white active';
+        allTab.textContent = '全部';
+        fragment.appendChild(allTab);
+        
+        // 添加其他分类标签
         categories.forEach(category => {
             const tab = document.createElement('a');
+            tab.href = `#tab-${category.id}`;
             tab.className = 'mdui-ripple mdui-ripple-white';
             tab.textContent = category.name;
             tab.dataset.categoryId = category.id;
             fragment.appendChild(tab);
         });
 
-        domCache.tabContainer.innerHTML = '';
-        domCache.tabContainer.appendChild(fragment);
-        new mdui.Tab(domCache.tabContainer).handleUpdate();
+        cache.tabContainer.innerHTML = '';
+        cache.tabContainer.appendChild(fragment);
+        
+        // 初始化MDUI标签组件
+        if (window.mdui) {
+            new mdui.Tab(cache.tabContainer).handleUpdate();
+        }
     } catch (error) {
         console.error('分类初始化失败:', error);
     }
-}
-
-// 带防抖的搜索功能
-function bindFilterEvents() {
-    let timeoutId;
-    const handler = function(e) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
-                const serviceName = card.dataset.name;
-                card.style.display = serviceName.includes(term) ? 'block' : 'none';
-            });
-        }, 300);
-    };
-
-    domCache.searchInput.removeEventListener('input', handler); // 先移除旧监听
-    domCache.searchInput.addEventListener('input', handler);
 }
 
 // 错误处理 
 function handleLoadingError(error) {
     console.error('Error:', error);
     const container = document.getElementById('cardContainer');
-    container.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <h5 class="text-danger">⚠️ 数据加载失败</h5>
-                    <p class="text-muted">${error.message}</p> 
-                    <button class="btn btn-secondary mt-3" onclick="location.reload()"> 重新加载</button>
-                </div>
-            `;
+    if (container) {
+        container.innerHTML = `
+                    <div class="mdui-col-xs-12 text-center py-5">
+                        <h5 class="mdui-text-color-red-500">⚠️ 数据加载失败</h5>
+                        <p class="mdui-text-color-gray-500">${error.message}</p> 
+                        <button class="mdui-btn mdui-btn-raised mdui-color-theme" onclick="location.reload()">重新加载</button>
+                    </div>
+                `;
+    }
 }
 
 // 事件绑定
 function bindFilterEvents() {
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
-        document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
-            // 修改为仅匹配服务名称
-            const serviceName = card.querySelector('.card-title').textContent.toLowerCase();
-            card.style.display = serviceName.includes(term) ? 'block' : 'none';
-        });
-    });
+    // 确保DOM缓存已初始化
+    const cache = initDomCache();
+    
+    if (!cache.searchInput) {
+        console.warn('未找到搜索输入框');
+        return;
+    }
+    
+    let timeoutId;
+    const handler = function(e) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#cardContainer > .mdui-col').forEach(card => {
+                // 匹配服务名称
+                const serviceName = card.querySelector('.card-title')?.textContent.toLowerCase() || '';
+                card.style.display = serviceName.includes(term) ? 'block' : 'none';
+            });
+        }, 300);
+    };
+
+    // 先移除旧监听（如果存在）
+    try {
+        cache.searchInput.removeEventListener('input', handler);
+    } catch (e) {
+        // 忽略移除不存在的监听器的错误
+    }
+    
+    cache.searchInput.addEventListener('input', handler);
 }
 
 // 初始化加载 
