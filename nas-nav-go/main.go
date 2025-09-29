@@ -120,14 +120,14 @@ func setupRouter() *gin.Engine {
 	// 静态文件服务
 	router.Static("/static", "./static")
 
-	// 主页面路由
+	// 主页面路由 - 使用新版前端
 	router.GET("/", func(c *gin.Context) {
-		c.File("./static/html/index.html")
+		c.File("./static/next/html/index.html")
 	})
 
-	// 后台管理入口
+	// 后台管理入口 - 使用新版前端
 	router.GET("/admin", func(c *gin.Context) {
-		c.File("./static/html/admin.html")
+		c.File("./static/next/html/admin.html")
 	})
 
 	// 公开API

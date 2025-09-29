@@ -1,46 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAS导航中心</title>
-    <!-- CSS -->
-    <link href="https://s4.zstatic.net/ajax/libs/mdbootstrap/4.20.0/css/mdb.min.css"  rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/index.css"> 
-    <!-- JS -->
-     <script src="https://s4.zstatic.net/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://s4.zstatic.net/ajax/libs/mdbootstrap/4.20.0/js/mdb.min.js"></script> 
-    <script src="/static/js/index.js"  defer></script>
+    <title>NAS 导航</title>
+    <!-- MDUI CSS -->
+    <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/css/mdui.min.css">
+    <link rel="stylesheet" href="/static/next/css/index.css">
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
-<body>
+
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
+
     <!-- 导航栏 -->
-    <nav class="navbar bg-primary">
-        <div class="container">
-            <a class="navbar-brand text-white" href="#">NAS导航</a>
-            <div class="d-flex align-items-center">
-                <input type="search" class="form-control search-box" placeholder="搜索服务..." id="searchInput">
-            <!-- 新增的“试用新版”按钮 -->
-            <a href="/static/next/html/index.html" class="btn btn-light ms-2" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">试用新版</a>
-            <a href="/admin" class="btn btn-light ms-2" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">管理界面</a>
-            </div>
-        </div>
-    </nav>
+    <div class="mdui-appbar">
+        <div class="mdui-toolbar mdui-color-theme">
+            <span class="mdui-typo-title">NAS 导航</span>
 
-    <!-- 主内容区 -->
-    <div class="container mt-4">
-        <!-- 分类过滤 -->
-        <div class="mb-4" id="categoryFilter">
-            <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-primary active" data-category="all">全部</button>
-                <button class="btn btn-outline-primary" data-category="media">媒体</button>
-                <button class="btn btn-outline-primary" data-category="tools">工具</button>
-                <button class="btn btn-outline-primary" data-category="system">系统</button>
-            </div>
-        </div>
+            <div class="mdui-toolbar-spacer"></div>
 
-        <!-- 导航卡片容器 -->
-        <div class="row g-4" id="cardContainer">
+            <!-- 搜索框 -->
+            <div class="mdui-textfield mdui-textfield-expandable mdui-float-right">
+                <button class="mdui-textfield-icon mdui-btn mdui-btn-icon">
+                    <i class="mdui-icon material-icons">search</i>
+                </button>
+                <input class="mdui-textfield-input" type="text" placeholder="搜索服务" id="searchInput" />
+                <button class="mdui-textfield-close mdui-btn mdui-btn-icon">
+                    <i class="mdui-icon material-icons">close</i>
+                </button>
+            </div>
+
+            <!-- 管理员登入按钮 -->
+            <a href="/admin" class="mdui-btn mdui-btn-icon">
+                <i class="mdui-icon material-icons">admin_panel_settings</i>
+            </a>
         </div>
-    </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <div class="mdui-container mdui-m-t-4">
+            <!-- 分类过滤 -->
+            <div class="mdui-tab" mdui-tab id="categoryTab">
+                <!-- 动态生成标签页 -->
+                <a href="#tab-all" class="mdui-ripple mdui-ripple-white active">全部</a>
+            </div>
+
+            <!-- 新增卡片模板 -->
+            <template id="cardTemplate">
+                <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
+                    <div class="mdui-card mdui-hoverable">
+                        <div class="mdui-card-media">
+                            <img class="card-icon" src="" alt="服务图标" />
+                        </div>
+                        <div class="mdui-card-primary">
+                            <div class="card-title mdui-card-primary-title"></div>
+                            <div class="card-category mdui-card-primary-subtitle"></div>
+                        </div>
+                        <div class="mdui-card-content">
+                            <p class="card-description mdui-typo"></p>
+                        </div>
+                        <div class="mdui-card-actions">
+                            <a href="#" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
+                                <i class="mdui-icon material-icons">public</i>域名访问
+                            </a>
+                            <a href="#" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
+                                <i class="mdui-icon material-icons">lan</i>内网访问
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- 导航卡片容器 -->
+            <div id="cardContainer" class="mdui-row"></div>
+
+            <!-- 底部标签 -->
+            <footer class="mdui-m-t-5 mdui-text-center mdui-typo-caption-opacity">
+                <div class="mdui-typo">
+                    nas-nav v0.2.0
+                    <a href="https://github.com/GT-610/nas-nav" target="_blank" class="mdui-btn mdui-btn-icon" style="vertical-align: middle;">
+                        <svg height="18" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="18" data-view-component="true" class="octicon octicon-mark-github">
+                            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                        </svg>
+                    </a>
+                </div>
+            </footer>
+
+            <!-- MDUI JS -->
+            <script src="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/js/mdui.min.js"></script>
+            <script src="/static/next/js/index.js"></script>
 </body>
+
 </html>
