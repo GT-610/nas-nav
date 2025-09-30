@@ -1,12 +1,26 @@
-// 缓存常用DOM元素
+// DOM 元素缓存
 const domCache = {
     managementContent: document.getElementById('managementContent'),
     loginContainer: document.getElementById('loginContainer'),
     serviceList: document.getElementById('serviceList'),
-    categorySelect: document.getElementById('categorySelect'),
     loginForm: document.getElementById('loginForm'),
-    editForm: document.getElementById('editForm'),
-    addCategoryForm: document.getElementById('addCategoryForm')
+    backToHome: document.getElementById('backToHome'),
+    // 添加对话框相关元素
+    editServiceDialog: document.getElementById('editServiceDialog'),
+    addServiceDialog: document.getElementById('addServiceDialog'),
+    addCategoryDialog: document.getElementById('addCategoryDialog'),
+    confirmDeleteDialog: document.getElementById('confirmDeleteDialog'),
+    // 表单元素
+    editServiceForm: document.getElementById('editServiceForm'),
+    addCategoryForm: document.getElementById('addCategoryForm'),
+    addNewServiceForm: document.getElementById('addNewServiceForm'),
+    // 按钮元素
+    addServiceBtn: document.getElementById('addServiceBtn'),
+    addCategoryBtn: document.getElementById('addCategoryBtn'),
+    confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+    // 选择框
+    editCategorySelect: document.getElementById('editCategorySelect'),
+    newCategorySelect: document.getElementById('newCategorySelect')
 };
 
 // 通用请求配置
@@ -18,6 +32,9 @@ const API_CONFIG = {
     }
 };
 
+// 当前选中的服务ID（用于删除确认）
+let selectedServiceId = null;
+
 // 认证管理模块
 const authManager = {
     checkAuth: async () => {
@@ -27,11 +44,16 @@ const authManager = {
                 credentials: 'include'
             });
 
-            const { managementContent, loginContainer } = domCache;
-            managementContent.style.display = res.ok ? 'block' : 'none';
-            loginContainer.style.display = res.ok ? 'none' : 'block';
+            domCache.managementContent.style.display = res.ok ? 'block' : 'none';
+            domCache.loginContainer.style.display = res.ok ? 'none' : 'block';
 
-            if (res.ok) await serviceManager.loadServices();
+            if (res.ok) {
+                await Promise.all([
+                    serviceManager.loadServices(),
+                    categoryManager.loadCategoriesForSelect('edit'),
+                    categoryManager.loadCategoriesForSelect('new')
+                ]);
+            }
         } catch (error) {
             console.error('认证检查失败:', error);
             utils.showSnackbar('系统繁忙，请稍后重试');
@@ -47,9 +69,14 @@ const authManager = {
             });
 
             if (response.ok) {
-                domCache.loginContainer.remove();
+                domCache.loginContainer.style.display = 'none';
                 domCache.managementContent.style.display = 'block';
-                await serviceManager.loadServices();
+                await Promise.all([
+                    serviceManager.loadServices(),
+                    categoryManager.loadCategoriesForSelect('edit'),
+                    categoryManager.loadCategoriesForSelect('new')
+                ]);
+                utils.showSnackbar('登录成功');
             } else {
                 utils.showSnackbar('登录失败，请检查密码', 'error');
             }
@@ -57,12 +84,27 @@ const authManager = {
             console.error('登录请求失败:', error);
             utils.showSnackbar('网络异常，请检查连接');
         }
+    },
+
+    handleLogout: async () => {
+        try {
+            await fetch('/admin/logout', {
+                method: 'POST',
+                headers: API_CONFIG.headers
+            });
+            // 重定向到主页
+            window.location.href = '/';
+        } catch (error) {
+            console.error('登出失败:', error);
+            // 即使登出请求失败，也重定向到主页
+            window.location.href = '/';
+        }
     }
 };
 
 // 服务管理模块
 const serviceManager = {
-    loadServices: async function () { // 修改处
+    loadServices: async function () {
         try {
             const res = await fetch(`${API_CONFIG.baseURL}/services`);
             const services = await res.json();
@@ -79,11 +121,11 @@ const serviceManager = {
             // 获取所有分类（包含空分类）
             const categoriesRes = await fetch(`${API_CONFIG.baseURL}/public/categories`);
             const allCategories = await categoriesRes.json();
-    
+
             const categoryTemplate = document.getElementById('categoryItemTemplate').content;
             const serviceTemplate = document.getElementById('serviceItemTemplate').content;
             const fragment = document.createDocumentFragment();
-    
+
             // 按分类ID建立映射
             const categoryMap = allCategories.reduce((acc, c) => {
                 acc[c.id] = {
@@ -92,23 +134,22 @@ const serviceManager = {
                 };
                 return acc;
             }, {});
-    
+
             // 按分类名称排序
             const sortedCategories = Object.values(categoryMap).sort((a, b) => 
                 a.name.localeCompare(b.name)
             );
-    
+
             // 生成分类结构
             sortedCategories.forEach(category => {
                 const categoryClone = document.importNode(categoryTemplate, true);
-                const categoryHeader = categoryClone.querySelector('.mdui-collapse-item-header');
                 const sublist = categoryClone.querySelector('.service-sublist');
-    
+
                 // 设置分类名称和数量
                 categoryClone.querySelector('.category-name').textContent = 
                     `${category.name} (${category.services.length})`;
-    
-                // 生成服务项（即使为空也保留分类）
+
+                // 生成服务项
                 category.services.forEach(service => {
                     const serviceClone = document.importNode(serviceTemplate, true);
                     const serviceItem = serviceClone.querySelector('.mdui-list-item');
@@ -123,17 +164,16 @@ const serviceManager = {
                     
                     // 添加编辑和删除按钮事件
                     serviceClone.querySelector('.edit-btn').addEventListener('click', () => {
-                        // 暂时隐藏编辑功能，直到修复完成
-                        utils.showSnackbar('编辑功能正在开发中', 'warning');
+                        this.prepareEditModal(service);
                     });
                     
                     serviceClone.querySelector('.delete-btn').addEventListener('click', () => {
-                        serviceManager.deleteService(service.id);
+                        this.prepareDeleteConfirm(service.id);
                     });
                     
                     sublist.appendChild(serviceClone);
                 });
-    
+
                 // 添加空分类提示
                 if (category.services.length === 0) {
                     const emptyItem = document.createElement('li');
@@ -145,7 +185,7 @@ const serviceManager = {
                     `;
                     sublist.appendChild(emptyItem);
                 }
-    
+
                 fragment.appendChild(categoryClone);
             });
 
@@ -164,13 +204,78 @@ const serviceManager = {
         });
     },
 
-    handleAddSubmit: async function() {
+    prepareEditModal: async (service) => {
+        // 填充表单数据
+        document.getElementById('editServiceId').value = service.id;
+        document.getElementById('editServiceName').value = service.name;
+        document.getElementById('editServiceIp').value = service.ip_url;
+        document.getElementById('editServiceDomain').value = service.domain_url;
+        document.getElementById('editServiceDescription').value = service.description || '';
+        
+        // 加载最新分类并设置选中项
+        await categoryManager.loadCategoriesForSelect('edit');
+        domCache.editCategorySelect.value = service.category_id;
+        mdui.updateTextFields();
+        
+        // 打开对话框
+        const dialog = new mdui.Dialog(domCache.editServiceDialog);
+        dialog.open();
+    },
+
+    handleEditSubmit: async (e) => {
+        e.preventDefault();
+        
         const formData = {
-            name: document.querySelector('#addServiceDialog [name="name"]').value.trim(),
-            ip_url: document.querySelector('#addServiceDialog [name="ip_url"]').value.trim(),
-            domain_url: document.querySelector('#addServiceDialog [name="domain_url"]').value.trim(),
-            category_id: parseInt(document.getElementById('categorySelect').value),
-            description: document.querySelector('#addServiceDialog [name="description"]').value.trim()
+            id: parseInt(document.getElementById('editServiceId').value),
+            name: document.getElementById('editServiceName').value.trim(),
+            ip_url: document.getElementById('editServiceIp').value.trim(),
+            domain_url: document.getElementById('editServiceDomain').value.trim(),
+            category_id: parseInt(domCache.editCategorySelect.value),
+            description: document.getElementById('editServiceDescription').value.trim()
+        };
+
+        // 基础验证
+        if (!formData.name || !formData.domain_url || !formData.category_id) {
+            return utils.showSnackbar('请填写必填字段', 'warning');
+        }
+
+        try {
+            const response = await fetch(`${API_CONFIG.baseURL}/services/${formData.id}`, {
+                method: 'PUT',
+                headers: API_CONFIG.headers,
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                utils.showSnackbar('服务更新成功');
+                // 关闭对话框
+                const dialog = new mdui.Dialog(domCache.editServiceDialog);
+                dialog.close();
+                // 刷新服务列表
+                await serviceManager.loadServices();
+            } else {
+                throw new Error(result.error || '更新服务失败');
+            }
+        } catch (error) {
+            console.error('更新服务失败:', error);
+            utils.showSnackbar(
+                error.message.includes('已存在') ? '服务名称已存在' : error.message,
+                'error'
+            );
+        }
+    },
+
+    handleAddSubmit: async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('newServiceName').value.trim(),
+            ip_url: document.getElementById('newServiceIp').value.trim(),
+            domain_url: document.getElementById('newServiceDomain').value.trim(),
+            category_id: parseInt(domCache.newCategorySelect.value),
+            description: document.getElementById('newServiceDescription').value.trim()
         };
 
         // 基础验证
@@ -190,13 +295,10 @@ const serviceManager = {
             if (response.ok) {
                 utils.showSnackbar('服务添加成功');
                 // 关闭对话框
-                const dialog = new mdui.Dialog('#addServiceDialog');
+                const dialog = new mdui.Dialog(domCache.addServiceDialog);
                 dialog.close();
                 // 重置表单
-                document.querySelector('#addServiceDialog [name="name"]').value = '';
-                document.querySelector('#addServiceDialog [name="ip_url"]').value = '';
-                document.querySelector('#addServiceDialog [name="domain_url"]').value = '';
-                document.querySelector('#addServiceDialog [name="description"]').value = '';
+                domCache.addNewServiceForm.reset();
                 // 刷新服务列表
                 await serviceManager.loadServices();
             } else {
@@ -211,27 +313,27 @@ const serviceManager = {
         }
     },
 
-    prepareEditModal: (service) => {
-        const fields = ['id', 'name', 'category', 'ipUrl', 'domainUrl'];
-        fields.forEach(field => {
-            document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}`).value = service[field];
-        });
-
-        const modal = new mdb.Modal(document.getElementById('editModal'));
-        modal.show();
+    prepareDeleteConfirm: (id) => {
+        selectedServiceId = id;
+        const dialog = new mdui.Dialog(domCache.confirmDeleteDialog);
+        dialog.open();
     },
 
-    deleteService: async (id) => {
-        if (!confirm('确定要删除这个服务吗？')) return;
+    deleteService: async () => {
+        if (!selectedServiceId) return;
 
         try {
-            const response = await fetch(`${API_CONFIG.baseURL}/services/${id}`, {
+            const response = await fetch(`${API_CONFIG.baseURL}/services/${selectedServiceId}`, {
                 method: 'DELETE'
             });
 
             if (response.ok) {
-                document.querySelector(`[data-id="${id}"]`).remove();
                 utils.showSnackbar('删除成功');
+                // 关闭对话框
+                const dialog = new mdui.Dialog(domCache.confirmDeleteDialog);
+                dialog.close();
+                // 刷新服务列表
+                await serviceManager.loadServices();
             } else {
                 const errorData = await response.json();
                 throw new Error(errorData.error || '删除失败');
@@ -267,11 +369,15 @@ const serviceManager = {
 
 // 分类管理模块
 const categoryManager = {
-    loadCategories: async () => {
+    loadCategoriesForSelect: async (type) => {
         try {
-            // 先清空选项（包括动态添加的）
-            while (domCache.categorySelect.options.length > 1) {
-                domCache.categorySelect.remove(1);
+            const selectElement = type === 'edit' ? 
+                domCache.editCategorySelect : 
+                domCache.newCategorySelect;
+            
+            // 先清空选项（保留第一个禁用选项）
+            while (selectElement.options.length > 1) {
+                selectElement.remove(1);
             }
             
             const res = await fetch(`${API_CONFIG.baseURL}/public/categories`);
@@ -280,11 +386,11 @@ const categoryManager = {
             // 添加新选项
             categories.forEach(c => {
                 const option = new Option(c.name, c.id);
-                domCache.categorySelect.add(option);
+                selectElement.add(option);
             });
 
-            // 强制刷新MDUI组件
-            new mdui.Select('#categorySelect', {
+            // 强制刷新MDUI组件 - 修复ID不匹配问题
+            new mdui.Select(type === 'edit' ? '#editCategorySelect' : '#newCategorySelect', {
                 autoInit: true,
                 position: 'bottom'
             });
@@ -294,8 +400,10 @@ const categoryManager = {
         }
     },
 
-    handleCategorySubmit: async function() {
-        const categoryName = document.querySelector('#addCategoryForm [name="categoryName"]').value.trim();
+    handleCategorySubmit: async (e) => {
+        e.preventDefault();
+        
+        const categoryName = document.getElementById('categoryName').value.trim();
         if (!categoryName) return utils.showSnackbar('分类名称不能为空', 'warning');
 
         try {
@@ -310,13 +418,16 @@ const categoryManager = {
             if (response.ok) {
                 utils.showSnackbar('分类添加成功');
                 // 关闭对话框
-                const dialog = new mdui.Dialog('#addCategoryDialog');
+                const dialog = new mdui.Dialog(domCache.addCategoryDialog);
                 dialog.close();
                 // 重置表单
-                document.querySelector('#addCategoryForm [name="categoryName"]').value = '';
+                domCache.addCategoryForm.reset();
                 // 刷新分类列表和服务列表
-                await categoryManager.loadCategories();
-                await serviceManager.loadServices();
+                await Promise.all([
+                    categoryManager.loadCategoriesForSelect('edit'),
+                    categoryManager.loadCategoriesForSelect('new'),
+                    serviceManager.loadServices()
+                ]);
             } else {
                 throw new Error(result.error || '添加失败');
             }
@@ -338,97 +449,67 @@ const utils = {
             timeout: 3000
         });
         snackbar.open();
-    },
-
-    secureFetch: async (url, options = {}) => {
-        try {
-            const [salt, iv] = [
-                crypto.getRandomValues(new Uint8Array(16)),
-                crypto.getRandomValues(new Uint8Array(12))
-            ];
-
-            const keyMaterial = await crypto.subtle.importKey(
-                "raw",
-                new TextEncoder().encode(sessionStorage.tempKey),
-                { name: "AES-GCM" },
-                false,
-                ["encrypt"]
-            );
-
-            const encrypted = await crypto.subtle.encrypt(
-                { name: "AES-GCM", iv },
-                keyMaterial,
-                new TextEncoder().encode(JSON.stringify(options.body || {}))
-            );
-
-            return fetch(url, {
-                ...options,
-                headers: {
-                    'X-Encrypted': 'AES256-GCM',
-                    'X-Salt': btoa(String.fromCharCode(...salt)),
-                    'X-IV': btoa(String.fromCharCode(...iv)),
-                    ...options.headers
-                },
-                body: encrypted
-            });
-        } catch (error) {
-            console.error('安全请求失败:', error);
-            throw new Error('安全通信失败');
-        }
     }
 };
 
-// 初始化
-document.addEventListener('DOMContentLoaded', async () => {
-    // 事件委托
+// 初始化事件监听
+function initEventListeners() {
+    // 登录表单提交
     domCache.loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         await authManager.handleLogin(document.getElementById('password').value);
+        // 清空密码输入框
+        document.getElementById('password').value = '';
     });
 
-    domCache.editForm.addEventListener('submit', async (e) => {
+    // 返回主页并退出登录
+    domCache.backToHome.addEventListener('click', async (e) => {
         e.preventDefault();
-        await serviceManager.handleEditSubmit(new FormData(e.target));
+        await authManager.handleLogout();
     });
 
-    document.getElementById('submitServiceBtn').addEventListener('click', async () => {
-        await serviceManager.handleAddSubmit();
+    // 编辑服务表单提交
+    domCache.editServiceForm.addEventListener('submit', serviceManager.handleEditSubmit);
+
+    // 新增服务表单提交
+    domCache.addNewServiceForm.addEventListener('submit', serviceManager.handleAddSubmit);
+
+    // 添加分类表单提交
+    domCache.addCategoryForm.addEventListener('submit', categoryManager.handleCategorySubmit);
+
+    // 添加服务按钮点击
+    domCache.addServiceBtn.addEventListener('click', async () => {
+        // 先加载最新分类数据
+        await categoryManager.loadCategoriesForSelect('new');
+        // 然后打开对话框
+        const dialog = new mdui.Dialog(domCache.addServiceDialog);
+        dialog.open();
     });
 
-    document.getElementById('submitCategoryBtn').addEventListener('click', async () => {
-        await categoryManager.handleCategorySubmit();
+    // 添加分类按钮点击
+    domCache.addCategoryBtn.addEventListener('click', () => {
+        const dialog = new mdui.Dialog(domCache.addCategoryDialog);
+        dialog.open();
     });
 
-    // 初始化组件
+    // 确认删除按钮点击
+    domCache.confirmDeleteBtn.addEventListener('click', async () => {
+        await serviceManager.deleteService();
+    });
+
+    // 初始化浮动按钮
     new mdui.Fab('#addFab', {
         trigger: 'hover',
         menuDelay: 100,
         hysteresis: 8
     });
+}
 
-    document.getElementById('addCategoryBtn').addEventListener('click', () => {
-        new mdui.Dialog('#addCategoryDialog').open();
-    });
-
-    document.getElementById('addServiceBtn').addEventListener('click', async () => {
-        // 先加载最新分类数据
-        await categoryManager.loadCategories(); 
-        // 然后打开对话框
-        new mdui.Dialog('#addServiceDialog').open();
-    });
-
-    // 加载数据
+// 初始化
+document.addEventListener('DOMContentLoaded', async () => {
+    // 初始化事件监听
+    initEventListeners();
+    
+    // 检查认证状态并加载数据
     await authManager.checkAuth();
-    await categoryManager.loadCategories();
-    await serviceManager.loadServices();
 });
-
-// 保持原有全局函数兼容性
-window.deleteService = serviceManager.deleteService;
-window.validatePasswordComplexity = (password) => {
-    const errors = [];
-    if (password.length < 8) errors.push("密码长度至少8位");
-    if (!/[A-Z]/.test(password)) errors.push("必须包含至少一个大写字母");
-    if (!/[0-9]/.test(password)) errors.push("必须包含至少一个数字");
-    if (errors.length) throw new Error(errors.join("\n"));
-};
