@@ -145,10 +145,7 @@ function renderServices() {
                         ${service.description ? `
                             <p class="service-card-description mdui-typo">${service.description}</p>
                         ` : ''}
-                        <div class="mdui-chip mdui-chip-icon mdui-m-t-2">
-                            <span class="mdui-chip-icon mdui-icon material-icons">folder</span>
-                            <span class="mdui-chip-title">${service.category}</span>
-                        </div>
+                        
                     </div>
                 </div>
                 <div class="mdui-card-actions mdui-card-actions-stacked">
@@ -174,14 +171,7 @@ function getServiceIcon(iconUrl, serviceName) {
         return `<img src="${iconUrl}" width="24" height="24" alt="图标">`;
     } else {
         // 否则使用默认图标
-        const defaultIcons = [
-            'settings', 'storage', 'cloud', 'database', 'web', 'network_wifi',
-            'music_note', 'video_library', 'photo_library', 'book', 'home', 'server'
-        ];
-        // 根据服务名称生成一致的随机图标
-        const seed = iconSeed(serviceName);
-        const iconIndex = seed % defaultIcons.length;
-        return `<i class="mdui-icon material-icons">${defaultIcons[iconIndex]}</i>`;
+        return `<i class="mdui-icon material-icons">apps</i>`;
     }
 }
 
