@@ -109,7 +109,6 @@ const serviceManager = {
             const res = await fetch(`${API_CONFIG.baseURL}/services`);
             const services = await res.json();
             this.renderServices(services.sort((a, b) => a.sort_order - b.sort_order));
-            this.initSortable();
         } catch (error) {
             console.error('加载服务失败:', error);
             utils.showSnackbar('服务加载失败，请刷新重试');
@@ -344,27 +343,6 @@ const serviceManager = {
                 '请先删除关联数据' : error.message, 'error');
         }
     },
-
-    initSortable: function () {
-        new Sortable(domCache.serviceList, {
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            handle: '.mdui-list-item', // 仅允许拖拽列表项
-            group: 'nested',
-            onEnd: async (evt) => {
-                const services = [...evt.from.querySelectorAll('[data-id]')]
-                    .map(li => parseInt(li.dataset.id));
-
-                await fetch(`${API_CONFIG.baseURL}/services/reorder`, {
-                    method: 'POST',
-                    headers: API_CONFIG.headers,
-                    body: JSON.stringify(services)
-                });
-
-                serviceManager.loadServices();
-            }
-        });
-    }
 };
 
 // 分类管理模块
