@@ -4,93 +4,379 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAS 导航</title>
-    <!-- MDUI CSS -->
+    <title>NAS 导航站</title>
+    <!-- MDUI 核心样式 -->
     <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/css/mdui.min.css">
-    <link rel="stylesheet" href="/static/css/index.css">
     <!-- Material Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .app-header {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .service-card {
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .service-card .mdui-card-content {
+            padding: 16px;
+        }
+        .service-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 24px;
+            color: #2196f3;
+        }
+        .category-chip {
+            margin: 4px;
+            transition: all 0.2s ease;
+        }
+        .category-chip.mdui-chip-active {
+            background-color: #2196f3;
+            color: white;
+        }
+        .search-container {
+            position: relative;
+        }
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(0,0,0,0.54);
+        }
+        .search-input {
+            padding-left: 48px;
+        }
+        .mdui-card-actions {
+            padding: 8px 16px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 64px 16px;
+            color: rgba(0,0,0,0.54);
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        .service-card-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .service-card-description {
+            font-size: 13px;
+            color: rgba(0,0,0,0.54);
+            margin-bottom: 12px;
+        }
+    </style>
 </head>
 
 <body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
-
-    <!-- 导航栏 -->
-    <div class="mdui-appbar">
-        <div class="mdui-toolbar mdui-color-theme">
-            <span class="mdui-typo-title">NAS 导航</span>
-
-            <div class="mdui-toolbar-spacer"></div>
-
-            <!-- 搜索框 -->
-            <div class="mdui-textfield mdui-textfield-expandable mdui-float-right">
-                <button class="mdui-textfield-icon mdui-btn mdui-btn-icon">
-                    <i class="mdui-icon material-icons">search</i>
-                </button>
-                <input class="mdui-textfield-input" type="text" placeholder="搜索服务" id="searchInput" />
-                <button class="mdui-textfield-close mdui-btn mdui-btn-icon">
-                    <i class="mdui-icon material-icons">close</i>
-                </button>
+    <!-- 顶部导航栏 -->
+    <header class="app-header">
+        <div class="mdui-container">
+            <div class="mdui-toolbar">
+                <span class="mdui-typo-title">NAS 服务导航</span>
+                <div class="mdui-toolbar-spacer"></div>
+                <div class="search-container mdui-textfield mdui-textfield-expandable mdui-hidden-sm-down">
+                    <button class="mdui-textfield-icon mdui-btn mdui-btn-icon">
+                        <i class="mdui-icon material-icons">search</i>
+                    </button>
+                    <div class="mdui-textfield-container">
+                        <input type="text" id="searchInput" class="mdui-textfield-input" placeholder="搜索服务..."/>
+                        <div class="mdui-textfield-line"></div>
+                    </div>
+                </div>
+                <a href="/admin" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-accent">
+                    <i class="mdui-icon material-icons">settings</i> 管理后台
+                </a>
             </div>
-
-            <!-- 管理员登入按钮 -->
-            <a href="/admin" class="mdui-btn mdui-btn-icon">
-                <i class="mdui-icon material-icons">admin_panel_settings</i>
-            </a>
         </div>
-        </nav>
+    </header>
 
-        <!-- 主内容区 -->
-        <div class="mdui-container mdui-m-t-4">
-            <!-- 分类过滤 -->
-            <div class="mdui-tab" mdui-tab id="categoryTab">
-                <!-- 动态生成标签页 -->
-                <a href="#tab-all" class="mdui-ripple mdui-ripple-white active">全部</a>
+    <!-- 移动端搜索栏 -->
+    <div class="mdui-container mdui-m-t-2 mdui-hidden-md-up">
+        <div class="search-container">
+            <i class="mdui-icon material-icons search-icon">search</i>
+            <div class="mdui-textfield mdui-textfield-full-width">
+                <input type="text" id="mobileSearchInput" class="mdui-textfield-input search-input" placeholder="搜索服务..."/>
+                <div class="mdui-textfield-line"></div>
             </div>
+        </div>
+    </div>
 
-            <!-- 新增卡片模板 -->
-            <template id="cardTemplate">
-                <div class="mdui-col-xs-12 mdui-col-sm-6 mdui-col-md-4 mdui-m-b-2">
-                    <div class="mdui-card mdui-hoverable">
-                        <div class="mdui-card-media">
-                            <img class="card-icon" src="" alt="服务图标" />
-                        </div>
-                        <div class="mdui-card-primary">
-                            <div class="card-title mdui-card-primary-title"></div>
-                            <div class="card-category mdui-card-primary-subtitle"></div>
-                        </div>
+    <!-- 主内容区 -->
+    <main class="app-container mdui-m-t-4">
+        <!-- 分类选择 -->
+        <div class="mdui-container">
+            <div class="mdui-chip-group" id="categoryChips">
+                <!-- 分类标签将动态生成 -->
+            </div>
+        </div>
+
+        <!-- 服务列表 -->
+        <div class="mdui-container mdui-m-t-4">
+            <div class="mdui-row" id="serviceGrid">
+                <!-- 服务卡片将动态生成 -->
+            </div>
+            
+            <!-- 空状态提示 -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <i class="mdui-icon material-icons empty-state-icon">search</i>
+                <h3 class="mdui-typo-display-1-opacity">未找到匹配的服务</h3>
+                <p class="mdui-typo-body-1">请尝试其他搜索关键词或浏览所有分类</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MDUI 核心JS -->
+    <script src="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/js/mdui.min.js"></script>
+    
+    <!-- 主脚本 -->
+    <script>
+        // 缓存常用DOM元素
+        const domCache = {
+            categoryChips: document.getElementById('categoryChips'),
+            serviceGrid: document.getElementById('serviceGrid'),
+            searchInput: document.getElementById('searchInput'),
+            mobileSearchInput: document.getElementById('mobileSearchInput'),
+            emptyState: document.getElementById('emptyState')
+        };
+
+        // 存储所有服务和分类数据
+        let allServices = [];
+        let allCategories = [];
+        let currentCategory = 'all';
+        let currentSearchTerm = '';
+
+        // 初始化应用
+        async function initApp() {
+            try {
+                // 同时获取服务和分类数据
+                const [servicesRes, categoriesRes] = await Promise.all([
+                    fetch('/api/public/services'),
+                    fetch('/api/public/categories')
+                ]);
+
+                allServices = await servicesRes.json();
+                allCategories = await categoriesRes.json();
+
+                // 渲染分类标签
+                renderCategories();
+                // 渲染服务列表
+                renderServices();
+                // 绑定搜索事件
+                bindSearchEvents();
+            } catch (error) {
+                console.error('初始化应用失败:', error);
+                showSnackbar('数据加载失败，请刷新页面重试');
+            }
+        }
+
+        // 渲染分类标签
+        function renderCategories() {
+            // 清空现有分类
+            domCache.categoryChips.innerHTML = '';
+
+            // 添加"全部"分类
+            const allCategoryChip = document.createElement('div');
+            allCategoryChip.className = 'mdui-chip category-chip mdui-chip-active';
+            allCategoryChip.innerHTML = `
+                <span class="mdui-chip-title">全部</span>
+            `;
+            allCategoryChip.dataset.category = 'all';
+            allCategoryChip.addEventListener('click', handleCategoryClick);
+            domCache.categoryChips.appendChild(allCategoryChip);
+
+            // 添加其他分类
+            allCategories.forEach(category => {
+                const categoryChip = document.createElement('div');
+                categoryChip.className = 'mdui-chip category-chip';
+                categoryChip.innerHTML = `
+                    <span class="mdui-chip-title">${category.name}</span>
+                `;
+                categoryChip.dataset.category = category.name;
+                categoryChip.addEventListener('click', handleCategoryClick);
+                domCache.categoryChips.appendChild(categoryChip);
+            });
+        }
+
+        // 处理分类点击事件
+        function handleCategoryClick(event) {
+            // 更新当前分类
+            currentCategory = event.currentTarget.dataset.category;
+
+            // 更新分类标签样式
+            document.querySelectorAll('.category-chip').forEach(chip => {
+                if (chip.dataset.category === currentCategory) {
+                    chip.classList.add('mdui-chip-active');
+                } else {
+                    chip.classList.remove('mdui-chip-active');
+                }
+            });
+
+            // 重新渲染服务列表
+            renderServices();
+        }
+
+        // 绑定搜索事件
+        function bindSearchEvents() {
+            // 桌面端搜索
+            domCache.searchInput.addEventListener('input', function() {
+                currentSearchTerm = this.value.trim().toLowerCase();
+                renderServices();
+            });
+
+            // 移动端搜索
+            domCache.mobileSearchInput.addEventListener('input', function() {
+                currentSearchTerm = this.value.trim().toLowerCase();
+                renderServices();
+            });
+        }
+
+        // 渲染服务列表
+        function renderServices() {
+            // 清空现有服务
+            domCache.serviceGrid.innerHTML = '';
+
+            // 过滤服务
+            let filteredServices = allServices;
+
+            // 按分类过滤
+            if (currentCategory !== 'all') {
+                filteredServices = filteredServices.filter(service => 
+                    service.category === currentCategory
+                );
+            }
+
+            // 按搜索词过滤
+            if (currentSearchTerm) {
+                filteredServices = filteredServices.filter(service => 
+                    service.name.toLowerCase().includes(currentSearchTerm) ||
+                    (service.description && service.description.toLowerCase().includes(currentSearchTerm)) ||
+                    service.category.toLowerCase().includes(currentSearchTerm)
+                );
+            }
+
+            // 显示空状态或服务列表
+            if (filteredServices.length === 0) {
+                domCache.emptyState.style.display = 'block';
+                return;
+            }
+
+            domCache.emptyState.style.display = 'none';
+
+            // 渲染服务卡片
+            filteredServices.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'mdui-col-md-3 mdui-col-sm-4 mdui-col-xs-6 mdui-m-b-4';
+                serviceCard.innerHTML = `
+                    <div class="service-card mdui-card mdui-hoverable">
                         <div class="mdui-card-content">
-                            <p class="card-description mdui-typo"></p>
+                            <div class="service-icon">
+                                ${getServiceIcon(service.icon || '', service.name)}
+                            </div>
+                            <div class="mdui-text-center">
+                                <h3 class="service-card-title mdui-typo-title">${service.name}</h3>
+                                ${service.description ? `
+                                    <p class="service-card-description mdui-typo">${service.description}</p>
+                                ` : ''}
+                                <div class="mdui-chip mdui-chip-icon mdui-m-t-2">
+                                    <span class="mdui-chip-icon mdui-icon material-icons">folder</span>
+                                    <span class="mdui-chip-title">${service.category}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mdui-card-actions">
-                            <a href="#" class="domain-btn mdui-btn mdui-btn-raised mdui-color-theme" target="_blank">
-                                <i class="mdui-icon material-icons">public</i>域名访问
-                            </a>
-                            <a href="#" class="ip-btn mdui-btn mdui-btn-raised mdui-color-theme-accent" target="_blank">
-                                <i class="mdui-icon material-icons">lan</i>内网访问
+                        <div class="mdui-card-actions mdui-card-actions-stacked">
+                            ${service.ip_url ? `
+                                <a href="${ensureProtocol(service.ip_url)}" target="_blank" class="mdui-btn mdui-btn-block mdui-ripple mdui-color-blue-500">
+                                    <i class="mdui-icon material-icons">settings_ethernet</i> IP访问
+                                </a>
+                            ` : ''}
+                            <a href="${ensureProtocol(service.domain_url)}" target="_blank" class="mdui-btn mdui-btn-block mdui-ripple mdui-color-teal-500">
+                                <i class="mdui-icon material-icons">public</i> 域名访问
                             </a>
                         </div>
                     </div>
-                </div>
-            </template>
+                `;
+                domCache.serviceGrid.appendChild(serviceCard);
+            });
+        }
 
-            <!-- 导航卡片容器 -->
-            <div id="cardContainer" class="mdui-row"></div>
+        // 获取服务图标
+        function getServiceIcon(iconUrl, serviceName) {
+            if (iconUrl && iconUrl.trim()) {
+                // 如果提供了图标URL，使用图片
+                return `<img src="${iconUrl}" width="24" height="24" alt="图标">`;
+            } else {
+                // 否则使用默认图标
+                const defaultIcons = [
+                    'settings', 'storage', 'cloud', 'database', 'web', 'network_wifi',
+                    'music_note', 'video_library', 'photo_library', 'book', 'home', 'server'
+                ];
+                // 根据服务名称生成一致的随机图标
+                const seed = iconSeed(serviceName);
+                const iconIndex = seed % defaultIcons.length;
+                return `<i class="mdui-icon material-icons">${defaultIcons[iconIndex]}</i>`;
+            }
+        }
 
-            <!-- 底部标签 -->
-            <footer class="mdui-m-t-5 mdui-text-center mdui-typo-caption-opacity">
-                <div class="mdui-typo">
-                    nas-nav v0.2.0
-                    <a href="https://github.com/GT-610/nas-nav" target="_blank" class="mdui-btn mdui-btn-icon" style="vertical-align: middle;">
-                        <svg height="18" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="18" data-view-component="true" class="octicon octicon-mark-github">
-                            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                        </svg>
-                    </a>
-                </div>
-            </footer>
+        // 为服务名称生成种子值
+        function iconSeed(str) {
+            let hash = 0;
+            if (str.length === 0) return hash;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // 转换为32位整数
+            }
+            return Math.abs(hash);
+        }
 
-            <!-- MDUI JS -->
-            <script src="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/js/mdui.min.js"></script>
-            <script src="/static/js/index.js"></script>
+        // 确保URL有协议
+        function ensureProtocol(url) {
+            if (!url) return '';
+            // 如果URL没有协议，添加http://
+            if (!url.match(/^[a-zA-Z]+:\/\//)) {
+                return 'http://' + url;
+            }
+            return url;
+        }
+
+        // 显示提示消息
+        function showSnackbar(message, type = 'success') {
+            return new mdui.snackbar({
+                message: message,
+                position: 'bottom',
+                timeout: 3000
+            }).open();
+        }
+
+        // 页面加载完成后初始化应用
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
 
 </html>
