@@ -1,479 +1,261 @@
-/* 自定义CSS变量 */
-:root {
-    --primary-color: #4CAF50;
-    --primary-color-light: #66BB6A;
-    --primary-color-dark: #388E3C;
-    --accent-color: #FF5722;
-    --error-color: #F44336;
-    --success-color: #4CAF50;
-    --warning-color: #FFC107;
-    --text-color: #212121;
-    --text-secondary-color: #757575;
-    --divider-color: #BDBDBD;
-    --background-color: #FAFAFA;
-    --card-background-color: #FFFFFF;
-    --shadow-elevation-2dp: 0 2px 4px rgba(0,0,0,0.1);
-    --shadow-elevation-4dp: 0 4px 8px rgba(0,0,0,0.12);
-    --transition-speed: 0.3s;
-}
-
-/* 全局样式重置 */
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    line-height: 1.5;
-}
-
-/* 登录容器样式 */
-#loginContainer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 16px;
-}
-
-.login-form {
-    width: 100%;
+/* 登录页面样式 */
+.login-container {
     max-width: 400px;
-    background-color: var(--card-background-color);
+    margin-top: 10%;
+    width: 100%;
+}
+
+.login-container .mdui-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
+}
+
+.login-container .mdui-card-content {
     padding: 24px;
-    box-shadow: var(--shadow-elevation-4dp);
 }
 
-.login-form h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    color: var(--primary-color);
-    text-align: center;
-}
-
-.login-form .mdui-textfield {
-    margin-bottom: 16px;
-}
-
-/* 管理内容区域 */
-#managementContent {
-    padding: 16px;
-    padding-top: 80px;
-    transition: opacity var(--transition-speed);
-}
-
-/* 顶部导航栏 */
-.header-nav {
-    position: fixed;
+/* 管理页面通用样式 */
+.app-header {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 16px;
-    z-index: 1000;
-    box-shadow: var(--shadow-elevation-2dp);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    z-index: 100;
 }
 
-.header-nav h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 500;
+/* 标签页样式 */
+.mdui-tabs {
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.header-nav .back-button {
-    color: white;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    padding: 4px 12px;
-    border-radius: 4px;
-    transition: background-color var(--transition-speed);
-}
-
-.header-nav .back-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-.header-nav .back-button i {
-    margin-right: 8px;
-}
-
-/* 服务列表样式 */
-.service-category {
-    margin-bottom: 16px;
-    background-color: var(--card-background-color);
+/* 表格样式 */
+.mdui-table {
+    width: 100%;
+    background-color: #fff;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: var(--shadow-elevation-2dp);
 }
 
-.category-header {
-    padding: 16px;
-    cursor: pointer;
-    user-select: none;
-    transition: background-color var(--transition-speed);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.category-header:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.category-name {
+.mdui-table th {
+    background-color: #f5f5f5;
     font-weight: 500;
-    margin: 0;
-    display: flex;
-    align-items: center;
+    color: rgba(0, 0, 0, 0.87);
 }
 
-.category-name i {
-    margin-right: 12px;
-    color: var(--primary-color);
+.mdui-table td, .mdui-table th {
+    padding: 12px 16px;
+    text-align: left;
 }
 
-/* 服务项样式 */
-.service-item {
-    border-top: 1px solid var(--divider-color);
-    transition: background-color var(--transition-speed);
+.mdui-table tbody tr:hover {
+    background-color: #f9f9f9;
 }
 
-.service-item:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+/* 按钮样式 */
+.mdui-btn {
+    text-transform: none;
 }
 
-.service-item .mdui-list-item {
-    cursor: move;
-}
-
-.service-name {
-    font-weight: 500;
-}
-
-.service-description {
-    color: var(--text-secondary-color);
-    font-size: 0.875rem;
-    margin-top: 4px;
-}
-
-/* 操作按钮样式 */
-.action-buttons {
-    display: flex;
-    gap: 8px;
-    opacity: 0;
-    transition: opacity var(--transition-speed);
-}
-
-.service-item:hover .action-buttons {
-    opacity: 1;
-}
-
-.edit-btn, .delete-btn {
-    min-width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.mdui-btn-icon {
     border-radius: 50%;
-    transition: background-color var(--transition-speed);
-    color: var(--text-secondary-color);
-}
-
-.edit-btn:hover {
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--primary-color);
-}
-
-.delete-btn:hover {
-    background-color: rgba(244, 67, 54, 0.1);
-    color: var(--error-color);
-}
-
-/* 浮动按钮容器 */
-.fab-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 999;
-}
-
-.fab-submenu {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-}
-
-.fab-submenu .mdui-fab {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity var(--transition-speed), transform var(--transition-speed);
-}
-
-.fab-container.open .fab-submenu .mdui-fab {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.fab-container.open .fab-submenu .mdui-fab:nth-child(1) {
-    transition-delay: 0.05s;
-}
-
-.fab-container.open .fab-submenu .mdui-fab:nth-child(2) {
-    transition-delay: 0.1s;
 }
 
 /* 对话框样式 */
 .mdui-dialog {
-    border-radius: 8px;
+    max-width: 500px;
 }
 
-.mdui-dialog-content {
-    max-height: 70vh;
-    overflow-y: auto;
+.mdui-dialog-title {
+    font-size: 18px;
+    font-weight: 500;
 }
 
-.dialog-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* 表单样式 */
+.mdui-form {
+    margin-top: 16px;
 }
 
-.dialog-form .mdui-textfield {
-    margin-bottom: 0;
+.mdui-textfield {
+    margin-bottom: 20px;
 }
 
-.dialog-form .mdui-textfield-helper {
-    color: var(--text-secondary-color);
+.mdui-textfield-floating-label .mdui-textfield-label {
+    transform-origin: left top;
 }
 
-.dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 24px;
-}
-
-/* 确认删除对话框样式 */
-.confirm-delete-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 24px 0;
-}
-
-.confirm-delete-icon {
-    color: var(--error-color);
-    font-size: 48px;
-    margin-bottom: 16px;
-}
-
-.confirm-delete-text {
-    font-size: 1rem;
-    line-height: 1.5;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    #managementContent {
-        padding: 12px;
-        padding-top: 70px;
-    }
-    
-    .header-nav {
-        padding: 12px;
-    }
-    
-    .header-nav h1 {
-        font-size: 1.25rem;
-    }
-    
-    .login-form {
-        padding: 20px;
-    }
-    
-    .fab-container {
-        bottom: 16px;
-        right: 16px;
-    }
-    
-    .category-header {
-        padding: 12px;
-    }
-    
-    .mdui-dialog-content {
-        max-height: 60vh;
-    }
-}
-
-/* 滚动条样式 */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
-}
-
-/* 动画效果 */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.service-category {
-    animation: fadeIn var(--transition-speed) ease-out;
-}
-
-.service-category:nth-child(2) { animation-delay: 0.1s; }
-.service-category:nth-child(3) { animation-delay: 0.2s; }
-.service-category:nth-child(4) { animation-delay: 0.3s; }
-.service-category:nth-child(5) { animation-delay: 0.4s; }
-
-/* 加载状态 */
-.loading {
+/* 图标样式 */
+.service-icon-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px;
-    color: var(--text-secondary-color);
+    margin: 0 auto;
+    font-size: 16px;
+    color: #2196f3;
+}
+
+/* 操作按钮组样式 */
+.action-buttons {
+    display: flex;
+    gap: 8px;
 }
 
 /* 空状态样式 */
 .empty-state {
     text-align: center;
-    padding: 40px 20px;
-    color: var(--text-secondary-color);
+    padding: 64px 16px;
+    color: rgba(0, 0, 0, 0.54);
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.empty-state i {
+.empty-state-icon {
     font-size: 48px;
     margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+/* 加载状态样式 */
+.loading-state {
+    text-align: center;
+    padding: 48px 16px;
+    color: rgba(0, 0, 0, 0.54);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .login-container {
+        margin-top: 20%;
+        padding: 16px;
+    }
+    
+    .mdui-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .mdui-dialog {
+        margin: 16px;
+        width: calc(100% - 32px);
+    }
+    
+    .mdui-dialog-title {
+        font-size: 16px;
+    }
+    
+    .mdui-dialog-content {
+        padding: 16px;
+    }
+    
+    .mdui-dialog-actions {
+        padding: 8px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        margin-top: 10%;
+    }
+    
+    .mdui-toolbar {
+        padding: 0 8px;
+    }
+    
+    .mdui-typo-title {
+        font-size: 18px;
+    }
+    
+    #logoutBtn {
+        font-size: 14px;
+        padding: 0 12px;
+    }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 工具提示样式 */
+[data-tooltip] {
+    position: relative;
+    cursor: pointer;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* 标签页内容样式 */
+.mdui-p-a-4 {
+    background-color: #fff;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 按钮组样式 */
+.mdui-m-b-4 {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* 输入框焦点样式 */
+.mdui-textfield:focus-within .mdui-textfield-label {
+    color: #2196f3 !important;
+}
+
+.mdui-textfield:focus-within .mdui-textfield-line {
+    border-bottom-color: #2196f3 !important;
+}
+
+/* 禁用状态样式 */
+.mdui-table tbody tr.disabled {
     opacity: 0.5;
 }
 
-.empty-state h3 {
-    margin: 8px 0;
-    color: var(--text-color);
+.mdui-table tbody tr.disabled:hover {
+    background-color: transparent;
 }
 
-.empty-state p {
-    margin: 0;
-    font-size: 0.875rem;
+/* 确认删除按钮样式 */
+.mdui-btn-danger {
+    color: #f44336;
 }
 
-/* 自定义颜色变体 */
-.mdui-textfield-focused .mdui-textfield-input {
-    border-bottom-color: var(--primary-color);
-}
-
-.mdui-textfield-focused .mdui-textfield-label {
-    color: var(--primary-color);
-}
-
-.mdui-radio-checked .mdui-radio-icon {
-    border-color: var(--primary-color);
-}
-
-.mdui-radio-checked .mdui-radio-icon::after {
-    background-color: var(--primary-color);
-}
-
-/* 提升表单元素样式 */
-.dialog-form .mdui-textfield-input {
-    transition: all var(--transition-speed);
-}
-
-.dialog-form .mdui-textfield-input:focus {
-    border-bottom-width: 2px;
-}
-
-/* 提升按钮样式 */
-.mdui-btn {
-    transition: all var(--transition-speed);
-}
-
-.mdui-btn-raised:not(.mdui-btn-disabled) {
-    box-shadow: var(--shadow-elevation-2dp);
-}
-
-.mdui-btn-raised:not(.mdui-btn-disabled):active {
-    box-shadow: none;
-}
-
-/* 优化折叠面板动画 */
-.mdui-collapse-item-body {
-    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
-}
-
-/* 优化拖拽排序体验 */
-.sortable-ghost {
-    opacity: 0.3;
-    background-color: var(--primary-color-light);
-}
-
-.sortable-chosen {
-    background-color: rgba(76, 175, 80, 0.1);
-}
-
-/* 提示消息样式增强 */
-.mdui-snackbar {
-    border-radius: 4px;
-    min-width: 280px;
-    box-shadow: var(--shadow-elevation-4dp);
-}
-
-.mdui-snackbar-text {
-    font-size: 0.875rem;
-    line-height: 1.5;
-}
-
-/* 隐藏空分类的展开按钮（如果有必要） */
-.service-sublist:empty {
-    display: none;
-}
-
-/* MDUI 组件样式补丁 */
-.mdui-dialog-title {
-    font-weight: 500;
-    margin-bottom: 16px;
-}
-
-.mdui-dialog-content {
-    padding: 0 24px 24px 24px;
-}
-
-.mdui-fab {
-    transition: all var(--transition-speed);
-}
-
-/* 提升可访问性 */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+.mdui-btn-danger:hover {
+    background-color: #ffebee;
 }

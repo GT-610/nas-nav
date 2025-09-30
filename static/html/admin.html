@@ -4,220 +4,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAS 导航后台管理</title>
+    <title>NAS 导航站 - 管理后台</title>
     <!-- MDUI 核心样式 -->
     <link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/css/mdui.min.css">
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- 自定义样式 -->
     <link rel="stylesheet" href="/static/css/admin.css">
-    <!-- 排序库 -->
-    <script src="https://s4.zstatic.net/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
 </head>
 
-<body class="mdui-theme-primary-indigo mdui-theme-accent-pink">
-    <!-- 顶部导航 -->
-    <div class="mdui-appbar mdui-appbar-fixed">
-        <div class="mdui-toolbar mdui-color-theme">
-            <span class="mdui-typo-title">NAS导航管理后台</span>
-            <div class="mdui-toolbar-spacer"></div>
-            <a href="/" id="backToHome" class="mdui-btn mdui-btn-icon mdui-ripple" title="返回主页并退出登录">
-                <i class="mdui-icon material-icons">home</i>
-            </a>
-        </div>
-    </div>
-
-    <!-- 主内容区域 -->
-    <div class="mdui-container">
-        <!-- 登录容器 -->
-        <div id="loginContainer" class="mdui-row mdui-m-t-16">
-            <div class="mdui-col-md-4 mdui-col-offset-md-4 mdui-col-sm-6 mdui-col-offset-sm-3 mdui-col-xs-10 mdui-col-offset-xs-1">
-                <div class="mdui-card">
-                    <div class="mdui-card-header">
-                        <div class="mdui-card-header-title">管理员登录</div>
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink mdui-text-color-black">
+    <!-- 登录页面 -->
+    <div id="loginPage" class="mdui-container">
+        <div class="login-container mdui-center">
+            <div class="mdui-card">
+                <div class="mdui-card-content">
+                    <div class="mdui-text-center mdui-m-b-4">
+                        <h2 class="mdui-typo-display-1">NAS 导航站管理后台</h2>
+                        <p class="mdui-typo-subheading-opacity">请输入管理员密码登录</p>
                     </div>
-                    <form id="loginForm" class="mdui-card-content">
+                    <form id="loginForm" class="mdui-form">
                         <div class="mdui-textfield mdui-textfield-floating-label">
-                            <input class="mdui-textfield-input" type="password" id="password" required />
-                            <label class="mdui-textfield-label">请输入管理员密码</label>
+                            <label class="mdui-textfield-label">密码</label>
+                            <input type="password" id="passwordInput" class="mdui-textfield-input" required/>
+                            <div class="mdui-textfield-line"></div>
                         </div>
-                        <button type="submit" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent mdui-center mdui-m-t-4">
-                            登录
-                        </button>
+                        <div class="mdui-m-t-4">
+                            <button type="submit" class="mdui-btn mdui-btn-block mdui-btn-raised mdui-color-primary mdui-ripple">
+                                登录
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
-
-        <!-- 管理界面 - 默认隐藏 -->
-        <div id="managementContent" class="mdui-m-t-16" style="display:none">
-            <!-- 服务列表 -->
-            <div class="mdui-card">
-                <div class="mdui-card-header">
-                    <h2 class="mdui-card-header-title">服务管理</h2>
-                </div>
-                <ul id="serviceList" class="mdui-list sortable-list">
-                    <!-- 动态内容将在这里生成 -->
-                </ul>
-            </div>
-
-            <!-- 浮动操作按钮 -->
-            <div class="mdui-fab-wrapper" id="addFab" mdui-fab="{trigger: 'hover'}">
-                <button class="mdui-fab mdui-ripple mdui-color-theme-accent">
-                    <!-- 默认显示的图标 -->
-                    <i class="mdui-icon material-icons">add</i>
-                    <!-- 在拨号菜单开始打开时，平滑切换到关闭图标 -->
-                    <i class="mdui-icon mdui-fab-opened material-icons">close</i>
-                </button>
-                <div class="mdui-fab-dial">
-                    <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-pink"
-                        mdui-tooltip="{content: '添加服务', position: 'left'}" id="addServiceBtn">
-                        <i class="mdui-icon material-icons">add</i>
-                    </button>
-                    <button class="mdui-fab mdui-fab-mini mdui-ripple mdui-color-red"
-                        mdui-tooltip="{content: '添加分类', position: 'left'}" id="addCategoryBtn">
-                        <i class="mdui-icon material-icons">add_to_photos</i>
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- 编辑服务对话框 -->
-    <div class="mdui-dialog" id="editServiceDialog">
-        <div class="mdui-dialog-title">编辑服务</div>
+    <!-- 管理页面（默认隐藏） -->
+    <div id="adminPage" class="mdui-container" style="display: none;">
+        <!-- 顶部导航栏 -->
+        <header class="app-header mdui-color-white">
+            <div class="mdui-container">
+                <div class="mdui-toolbar">
+                    <span class="mdui-typo-title">NAS 导航站 - 管理后台</span>
+                    <div class="mdui-toolbar-spacer"></div>
+                    <button id="changePasswordBtn" class="mdui-btn mdui-btn-icon mdui-ripple" title="修改密码">
+                        <i class="mdui-icon material-icons">lock</i>
+                    </button>
+                    <button id="logoutBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-red">
+                        <i class="mdui-icon material-icons">exit_to_app</i> 退出登录
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="mdui-m-t-4">
+            <!-- 标签页 -->
+            <div class="mdui-tabs" mdui-tabs>
+                <div class="mdui-tab-active" href="#services-tab">服务管理</div>
+                <div href="#categories-tab">分类管理</div>
+            </div>
+
+            <!-- 服务管理标签页 -->
+            <div id="services-tab" class="mdui-p-a-4">
+                <!-- 添加服务按钮 -->
+                <div class="mdui-m-b-4">
+                    <button id="addServiceBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-primary">
+                        <i class="mdui-icon material-icons">add</i> 添加服务
+                    </button>
+                </div>
+
+                <!-- 服务表格 -->
+                <div class="mdui-table-fluid">
+                    <table id="servicesTable" class="mdui-table mdui-table-hoverable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>图标</th>
+                                <th>分类</th>
+                                <th>IP地址</th>
+                                <th>域名</th>
+                                <th>描述</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 服务数据将动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 分类管理标签页 -->
+            <div id="categories-tab" class="mdui-p-a-4">
+                <!-- 添加分类按钮 -->
+                <div class="mdui-m-b-4">
+                    <button id="addCategoryBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-primary">
+                        <i class="mdui-icon material-icons">add</i> 添加分类
+                    </button>
+                </div>
+
+                <!-- 分类表格 -->
+                <div class="mdui-table-fluid">
+                    <table id="categoriesTable" class="mdui-table mdui-table-hoverable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>服务数量</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 分类数据将动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加/编辑服务对话框 -->
+    <div id="serviceDialog" class="mdui-dialog">
+        <div class="mdui-dialog-title">添加服务</div>
         <div class="mdui-dialog-content">
-            <form id="editServiceForm">
-                <input type="hidden" id="editServiceId">
+            <form id="serviceForm" class="mdui-form">
+                <input type="hidden" id="serviceIdInput">
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
                     <label class="mdui-textfield-label">服务名称</label>
-                    <input class="mdui-textfield-input" type="text" id="editServiceName" required />
+                    <input type="text" id="serviceNameInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
-                    <label class="mdui-textfield-label">IP地址</label>
-                    <input class="mdui-textfield-input" type="text" id="editServiceIp" required />
+                    <label class="mdui-textfield-label">服务图标 URL</label>
+                    <input type="text" id="serviceIconInput" class="mdui-textfield-input"/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
+                
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">所属分类</label>
+                    <select id="serviceCategorySelect" class="mdui-textfield-input" required>
+                        <!-- 分类选项将动态生成 -->
+                    </select>
+                    <div class="mdui-textfield-line"></div>
+                </div>
+                
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">IP 地址</label>
+                    <input type="text" id="serviceIpInput" class="mdui-textfield-input"/>
+                    <div class="mdui-textfield-line"></div>
+                </div>
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
                     <label class="mdui-textfield-label">域名地址</label>
-                    <input class="mdui-textfield-input" type="url" id="editServiceDomain" required />
+                    <input type="text" id="serviceDomainInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
                     <label class="mdui-textfield-label">服务描述</label>
-                    <textarea class="mdui-textfield-input" id="editServiceDescription" rows="3"></textarea>
+                    <textarea id="serviceDescriptionInput" class="mdui-textfield-input" rows="3"></textarea>
+                    <div class="mdui-textfield-line"></div>
                 </div>
-                <div class="mdui-select" id="editServiceCategory" mdui-select required>
-                    <select id="editCategorySelect">
-                        <option value="" disabled selected>选择分类</option>
-                    </select>
-                    <div class="mdui-select-menu">
-                        <!-- 动态生成选项 -->
-                    </div>
+                
+                <div class="mdui-textfield mdui-textfield-floating-label">
+                    <label class="mdui-textfield-label">排序顺序</label>
+                    <input type="number" id="serviceSortInput" class="mdui-textfield-input" value="999" min="0"/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
             </form>
         </div>
         <div class="mdui-dialog-actions">
-            <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-            <button type="submit" form="editServiceForm" class="mdui-btn mdui-ripple mdui-color-theme">保存</button>
+            <button class="mdui-btn mdui-ripple" onclick="closeServiceDialog()">取消</button>
+            <button id="saveServiceBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-primary">保存</button>
         </div>
     </div>
 
-    <!-- 添加分类对话框 -->
-    <div class="mdui-dialog" id="addCategoryDialog">
-        <div class="mdui-dialog-title">新增分类</div>
+    <!-- 添加/编辑分类对话框 -->
+    <div id="categoryDialog" class="mdui-dialog">
+        <div class="mdui-dialog-title">添加分类</div>
         <div class="mdui-dialog-content">
-            <form id="addCategoryForm">
+            <form id="categoryForm" class="mdui-form">
+                <input type="hidden" id="categoryIdInput">
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
                     <label class="mdui-textfield-label">分类名称</label>
-                    <input class="mdui-textfield-input" type="text" id="categoryName" required />
+                    <input type="text" id="categoryNameInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
             </form>
         </div>
         <div class="mdui-dialog-actions">
-            <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-            <button type="submit" form="addCategoryForm" class="mdui-btn mdui-ripple mdui-color-theme">创建</button>
+            <button class="mdui-btn mdui-ripple" onclick="closeCategoryDialog()">取消</button>
+            <button id="saveCategoryBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-primary">保存</button>
         </div>
     </div>
 
-    <!-- 新增服务对话框 -->
-    <div class="mdui-dialog" id="addServiceDialog">
-        <div class="mdui-dialog-title">新增服务</div>
+    <!-- 修改密码对话框 -->
+    <div id="passwordDialog" class="mdui-dialog">
+        <div class="mdui-dialog-title">修改密码</div>
         <div class="mdui-dialog-content">
-            <form id="addNewServiceForm">
+            <form id="passwordForm" class="mdui-form">
                 <div class="mdui-textfield mdui-textfield-floating-label">
-                    <label class="mdui-textfield-label">服务名称</label>
-                    <input class="mdui-textfield-input" type="text" id="newServiceName" required />
+                    <label class="mdui-textfield-label">当前密码</label>
+                    <input type="password" id="currentPasswordInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
-                    <label class="mdui-textfield-label">IP地址</label>
-                    <input class="mdui-textfield-input" type="text" id="newServiceIp" required />
+                    <label class="mdui-textfield-label">新密码</label>
+                    <input type="password" id="newPasswordInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
+                
                 <div class="mdui-textfield mdui-textfield-floating-label">
-                    <label class="mdui-textfield-label">域名地址</label>
-                    <input class="mdui-textfield-input" type="url" id="newServiceDomain" required />
-                </div>
-                <div class="mdui-textfield mdui-textfield-floating-label">
-                    <label class="mdui-textfield-label">服务描述</label>
-                    <textarea class="mdui-textfield-input" id="newServiceDescription" rows="3"></textarea>
-                </div>
-                <div class="mdui-select" id="newServiceCategory" mdui-select required>
-                    <select id="newCategorySelect">
-                        <option value="" disabled selected>选择分类</option>
-                    </select>
-                    <div class="mdui-select-menu">
-                        <!-- 动态生成选项 -->
-                    </div>
+                    <label class="mdui-textfield-label">确认新密码</label>
+                    <input type="password" id="confirmPasswordInput" class="mdui-textfield-input" required/>
+                    <div class="mdui-textfield-line"></div>
                 </div>
             </form>
         </div>
         <div class="mdui-dialog-actions">
-            <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-            <button type="submit" form="addNewServiceForm" class="mdui-btn mdui-ripple mdui-color-theme">创建</button>
+            <button class="mdui-btn mdui-ripple" onclick="closePasswordDialog()">取消</button>
+            <button id="savePasswordBtn" class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-primary">保存</button>
         </div>
     </div>
 
-    <!-- 确认删除对话框 -->
-    <div class="mdui-dialog" id="confirmDeleteDialog">
-        <div class="mdui-dialog-content">
-            <p>确定要删除这个服务吗？此操作不可撤销。</p>
-        </div>
-        <div class="mdui-dialog-actions">
-            <button class="mdui-btn mdui-ripple" mdui-dialog-close>取消</button>
-            <button class="mdui-btn mdui-ripple mdui-color-red" id="confirmDeleteBtn">删除</button>
-        </div>
-    </div>
-
-    <!-- 模板 -->
-    <!-- 分类项模板 -->
-    <template id="categoryItemTemplate">
-        <li class="mdui-collapse-item">
-            <div class="mdui-collapse-item-header mdui-list-item mdui-ripple">
-                <i class="mdui-icon material-icons">folder_open</i>
-                <div class="mdui-list-item-content">
-                    <div class="category-name mdui-text-color-theme-text"></div>
-                </div>
-                <i class="mdui-collapse-item-arrow mdui-icon material-icons">keyboard_arrow_down</i>
-            </div>
-            <ul class="mdui-collapse-item-body mdui-list service-sublist"></ul>
-        </li>
-    </template>
-
-    <!-- 服务项模板 -->
-    <template id="serviceItemTemplate">
-        <li class="mdui-list-item mdui-ripple" data-id="" data-sort-order="">
-            <div class="mdui-list-item-content">
-                <div class="service-name"></div>
-                <div class="mdui-list-item-text mdui-text-truncate service-description"></div>
-            </div>
-            <div class="mdui-list-item-action">
-                <button class="mdui-btn mdui-btn-icon mdui-text-color-theme-accent edit-btn">
-                    <i class="mdui-icon material-icons">edit</i>
-                </button>
-                <button class="mdui-btn mdui-btn-icon mdui-text-color-red delete-btn">
-                    <i class="mdui-icon material-icons">delete</i>
-                </button>
-            </div>
-        </li>
-    </template>
-
-    <!-- MDUI JS -->
+    <!-- MDUI 核心JS -->
     <script src="https://s4.zstatic.net/ajax/libs/mdui/1.0.2/js/mdui.min.js"></script>
+    
+    <!-- 自定义脚本 -->
     <script src="/static/js/admin.js"></script>
 </body>
 

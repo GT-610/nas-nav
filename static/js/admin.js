@@ -1,493 +1,748 @@
-// DOM 元素缓存
+// 页面元素缓存
 const domCache = {
-    managementContent: document.getElementById('managementContent'),
-    loginContainer: document.getElementById('loginContainer'),
-    serviceList: document.getElementById('serviceList'),
+    loginPage: document.getElementById('loginPage'),
+    adminPage: document.getElementById('adminPage'),
     loginForm: document.getElementById('loginForm'),
-    backToHome: document.getElementById('backToHome'),
-    // 添加对话框相关元素
-    editServiceDialog: document.getElementById('editServiceDialog'),
-    addServiceDialog: document.getElementById('addServiceDialog'),
-    addCategoryDialog: document.getElementById('addCategoryDialog'),
-    confirmDeleteDialog: document.getElementById('confirmDeleteDialog'),
-    // 表单元素
-    editServiceForm: document.getElementById('editServiceForm'),
-    addCategoryForm: document.getElementById('addCategoryForm'),
-    addNewServiceForm: document.getElementById('addNewServiceForm'),
-    // 按钮元素
+    passwordInput: document.getElementById('passwordInput'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    changePasswordBtn: document.getElementById('changePasswordBtn'),
     addServiceBtn: document.getElementById('addServiceBtn'),
     addCategoryBtn: document.getElementById('addCategoryBtn'),
-    confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
-    // 选择框
-    editCategorySelect: document.getElementById('editCategorySelect'),
-    newCategorySelect: document.getElementById('newCategorySelect')
+    servicesTable: document.getElementById('servicesTable'),
+    categoriesTable: document.getElementById('categoriesTable'),
+    serviceDialog: document.getElementById('serviceDialog'),
+    categoryDialog: document.getElementById('categoryDialog'),
+    passwordDialog: document.getElementById('passwordDialog'),
+    serviceForm: document.getElementById('serviceForm'),
+    categoryForm: document.getElementById('categoryForm'),
+    passwordForm: document.getElementById('passwordForm'),
+    saveServiceBtn: document.getElementById('saveServiceBtn'),
+    saveCategoryBtn: document.getElementById('saveCategoryBtn'),
+    savePasswordBtn: document.getElementById('savePasswordBtn'),
+    serviceCategorySelect: document.getElementById('serviceCategorySelect')
 };
 
-// 通用请求配置
-const API_CONFIG = {
-    baseURL: '/api',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-};
+// 服务和分类数据
+let services = [];
+let categories = [];
 
-// 当前选中的服务ID（用于删除确认）
-let selectedServiceId = null;
+// MDUI组件
+let serviceDialogInstance = null;
+let categoryDialogInstance = null;
+let passwordDialogInstance = null;
 
-// 认证管理模块
-const authManager = {
-    checkAuth: async () => {
-        try {
-            const res = await fetch(`${API_CONFIG.baseURL}/services`, {
-                method: 'HEAD',
-                credentials: 'include'
-            });
+// 初始化应用
+function initApp() {
+    // 初始化MDUI对话框
+    serviceDialogInstance = new mdui.Dialog('#serviceDialog');
+    categoryDialogInstance = new mdui.Dialog('#categoryDialog');
+    passwordDialogInstance = new mdui.Dialog('#passwordDialog');
+    
+    // MDUI 1.0.2没有Tabs构造函数，标签页功能会自动工作，无需额外初始化
+    
+    // 检查登录状态
+    checkLoginStatus();
+    
+    // 绑定事件
+    bindEvents();
+}
 
-            domCache.managementContent.style.display = res.ok ? 'block' : 'none';
-            domCache.loginContainer.style.display = res.ok ? 'none' : 'block';
-
-            if (res.ok) {
-                await Promise.all([
-                    serviceManager.loadServices(),
-                    categoryManager.loadCategoriesForSelect('edit'),
-                    categoryManager.loadCategoriesForSelect('new')
-                ]);
-            }
-        } catch (error) {
-            console.error('认证检查失败:', error);
-            utils.showSnackbar('系统繁忙，请稍后重试');
-        }
-    },
-
-    handleLogin: async (password) => {
-        try {
-            const response = await fetch('/admin/login', {
-                method: 'POST',
-                headers: API_CONFIG.headers,
-                body: JSON.stringify({ password })
-            });
-
+// 检查登录状态
+function checkLoginStatus() {
+    // 不使用localStorage或sessionStorage存储登录状态
+    // 而是通过发送请求到服务器来检查session是否有效
+    // 使用/api/services作为检查登录状态的API，因为它需要认证才能访问
+    fetch('/api/services')
+        .then(response => {
             if (response.ok) {
-                domCache.loginContainer.style.display = 'none';
-                domCache.managementContent.style.display = 'block';
-                await Promise.all([
-                    serviceManager.loadServices(),
-                    categoryManager.loadCategoriesForSelect('edit'),
-                    categoryManager.loadCategoriesForSelect('new')
-                ]);
-                utils.showSnackbar('登录成功');
-            } else {
-                utils.showSnackbar('登录失败，请检查密码', 'error');
+                return response.json();
             }
-        } catch (error) {
-            console.error('登录请求失败:', error);
-            utils.showSnackbar('网络异常，请检查连接');
-        }
-    },
-
-    handleLogout: async () => {
-        try {
-            await fetch('/admin/logout', {
-                method: 'POST',
-                headers: API_CONFIG.headers
-            });
-            // 重定向到主页
-            window.location.href = '/';
-        } catch (error) {
-            console.error('登出失败:', error);
-            // 即使登出请求失败，也重定向到主页
-            window.location.href = '/';
-        }
-    }
-};
-
-// 服务管理模块
-const serviceManager = {
-    loadServices: async function () {
-        try {
-            const res = await fetch(`${API_CONFIG.baseURL}/services`);
-            const services = await res.json();
-            this.renderServices(services.sort((a, b) => a.sort_order - b.sort_order));
-        } catch (error) {
-            console.error('加载服务失败:', error);
-            utils.showSnackbar('服务加载失败，请刷新重试');
-        }
-    },
-
-    renderServices: async function(services) {
-        try {
-            // 获取所有分类（包含空分类）
-            const categoriesRes = await fetch(`${API_CONFIG.baseURL}/public/categories`);
-            const allCategories = await categoriesRes.json();
-
-            const categoryTemplate = document.getElementById('categoryItemTemplate').content;
-            const serviceTemplate = document.getElementById('serviceItemTemplate').content;
-            const fragment = document.createDocumentFragment();
-
-            // 按分类ID建立映射
-            const categoryMap = allCategories.reduce((acc, c) => {
-                acc[c.id] = {
-                    ...c,
-                    services: services.filter(s => s.category_id === c.id)
-                };
-                return acc;
-            }, {});
-
-            // 按分类名称排序
-            const sortedCategories = Object.values(categoryMap).sort((a, b) => 
-                a.name.localeCompare(b.name)
-            );
-
-            // 生成分类结构
-            sortedCategories.forEach(category => {
-                const categoryClone = document.importNode(categoryTemplate, true);
-                const sublist = categoryClone.querySelector('.service-sublist');
-
-                // 设置分类名称和数量
-                categoryClone.querySelector('.category-name').textContent = 
-                    `${category.name} (${category.services.length})`;
-
-                // 生成服务项
-                category.services.forEach(service => {
-                    const serviceClone = document.importNode(serviceTemplate, true);
-                    const serviceItem = serviceClone.querySelector('.mdui-list-item');
-                    
-                    // 设置服务项数据属性
-                    serviceItem.setAttribute('data-id', service.id);
-                    serviceItem.setAttribute('data-sort-order', service.sort_order);
-                    
-                    // 设置服务名称和描述
-                    serviceClone.querySelector('.service-name').textContent = service.name;
-                    serviceClone.querySelector('.service-description').textContent = service.description || '无描述';
-                    
-                    // 添加编辑和删除按钮事件
-                    serviceClone.querySelector('.edit-btn').addEventListener('click', () => {
-                        this.prepareEditModal(service);
-                    });
-                    
-                    serviceClone.querySelector('.delete-btn').addEventListener('click', () => {
-                        this.prepareDeleteConfirm(service.id);
-                    });
-                    
-                    sublist.appendChild(serviceClone);
-                });
-
-                // 添加空分类提示
-                if (category.services.length === 0) {
-                    const emptyItem = document.createElement('li');
-                    emptyItem.className = 'mdui-list-item';
-                    emptyItem.innerHTML = `
-                        <div class="mdui-list-item-content">
-                            <div class="mdui-text-color-theme-secondary">暂无服务</div>
-                        </div>
-                    `;
-                    sublist.appendChild(emptyItem);
-                }
-
-                fragment.appendChild(categoryClone);
-            });
-
-            // 更新DOM
-            domCache.serviceList.innerHTML = '';
-            domCache.serviceList.appendChild(fragment);
-
-        } catch (error) {
-            console.error('渲染失败:', error);
-            utils.showSnackbar('数据加载异常');
-        }
-
-        // 初始化MDUI折叠组件
-        new mdui.Collapse(domCache.serviceList, {
-            accordion: false
+            // 如果返回401，说明未登录
+            return { authenticated: false };
+        })
+        .then(data => {
+            if (data.authenticated) {
+                // 已登录，显示管理页面
+                domCache.loginPage.style.display = 'none';
+                domCache.adminPage.style.display = 'block';
+                // 加载数据
+                loadAllData();
+            } else {
+                // 未登录，显示登录页面
+                domCache.loginPage.style.display = 'block';
+                domCache.adminPage.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('检查登录状态错误:', error);
+            // 出错时默认显示登录页面
+            domCache.loginPage.style.display = 'block';
+            domCache.adminPage.style.display = 'none';
         });
-    },
+}
 
-    prepareEditModal: async (service) => {
-        // 填充表单数据
-        document.getElementById('editServiceId').value = service.id;
-        document.getElementById('editServiceName').value = service.name;
-        document.getElementById('editServiceIp').value = service.ip_url;
-        document.getElementById('editServiceDomain').value = service.domain_url;
-        document.getElementById('editServiceDescription').value = service.description || '';
-        
-        // 加载最新分类并设置选中项
-        await categoryManager.loadCategoriesForSelect('edit');
-        domCache.editCategorySelect.value = service.category_id;
-        mdui.updateTextFields();
-        
-        // 打开对话框
-        const dialog = new mdui.Dialog(domCache.editServiceDialog);
-        dialog.open();
-    },
-
-    handleEditSubmit: async (e) => {
-        e.preventDefault();
-        
-        const formData = {
-            id: parseInt(document.getElementById('editServiceId').value),
-            name: document.getElementById('editServiceName').value.trim(),
-            ip_url: document.getElementById('editServiceIp').value.trim(),
-            domain_url: document.getElementById('editServiceDomain').value.trim(),
-            category_id: parseInt(domCache.editCategorySelect.value),
-            description: document.getElementById('editServiceDescription').value.trim()
-        };
-
-        // 基础验证
-        if (!formData.name || !formData.domain_url || !formData.category_id) {
-            return utils.showSnackbar('请填写必填字段', 'warning');
-        }
-
-        try {
-            const response = await fetch(`${API_CONFIG.baseURL}/services/${formData.id}`, {
-                method: 'PUT',
-                headers: API_CONFIG.headers,
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                utils.showSnackbar('服务更新成功');
-                // 关闭对话框
-                const dialog = new mdui.Dialog(domCache.editServiceDialog);
-                dialog.close();
-                // 刷新服务列表
-                await serviceManager.loadServices();
-            } else {
-                throw new Error(result.error || '更新服务失败');
-            }
-        } catch (error) {
-            console.error('更新服务失败:', error);
-            utils.showSnackbar(
-                error.message.includes('已存在') ? '服务名称已存在' : error.message,
-                'error'
-            );
-        }
-    },
-
-    handleAddSubmit: async (e) => {
-        e.preventDefault();
-        
-        const formData = {
-            name: document.getElementById('newServiceName').value.trim(),
-            ip_url: document.getElementById('newServiceIp').value.trim(),
-            domain_url: document.getElementById('newServiceDomain').value.trim(),
-            category_id: parseInt(domCache.newCategorySelect.value),
-            description: document.getElementById('newServiceDescription').value.trim()
-        };
-
-        // 基础验证
-        if (!formData.name || !formData.domain_url || !formData.category_id) {
-            return utils.showSnackbar('请填写必填字段', 'warning');
-        }
-
-        try {
-            const response = await fetch(`${API_CONFIG.baseURL}/services`, {
-                method: 'POST',
-                headers: API_CONFIG.headers,
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                utils.showSnackbar('服务添加成功');
-                // 关闭对话框
-                const dialog = new mdui.Dialog(domCache.addServiceDialog);
-                dialog.close();
-                // 重置表单
-                domCache.addNewServiceForm.reset();
-                // 刷新服务列表
-                await serviceManager.loadServices();
-            } else {
-                throw new Error(result.error || '添加服务失败');
-            }
-        } catch (error) {
-            console.error('添加服务失败:', error);
-            utils.showSnackbar(
-                error.message.includes('已存在') ? '服务名称已存在' : error.message,
-                'error'
-            );
-        }
-    },
-
-    prepareDeleteConfirm: (id) => {
-        selectedServiceId = id;
-        const dialog = new mdui.Dialog(domCache.confirmDeleteDialog);
-        dialog.open();
-    },
-
-    deleteService: async () => {
-        if (!selectedServiceId) return;
-
-        try {
-            const response = await fetch(`${API_CONFIG.baseURL}/services/${selectedServiceId}`, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                utils.showSnackbar('删除成功');
-                // 关闭对话框
-                const dialog = new mdui.Dialog(domCache.confirmDeleteDialog);
-                dialog.close();
-                // 刷新服务列表
-                await serviceManager.loadServices();
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '删除失败');
-            }
-        } catch (error) {
-            console.error('删除失败:', error);
-            utils.showSnackbar(error.message.includes('关联') ?
-                '请先删除关联数据' : error.message, 'error');
-        }
-    },
-};
-
-// 分类管理模块
-const categoryManager = {
-    loadCategoriesForSelect: async (type) => {
-        try {
-            const selectElement = type === 'edit' ? 
-                domCache.editCategorySelect : 
-                domCache.newCategorySelect;
-            
-            // 先清空选项（保留第一个禁用选项）
-            while (selectElement.options.length > 1) {
-                selectElement.remove(1);
-            }
-            
-            const res = await fetch(`${API_CONFIG.baseURL}/public/categories`);
-            const categories = await res.json();
-
-            // 添加新选项
-            categories.forEach(c => {
-                const option = new Option(c.name, c.id);
-                selectElement.add(option);
-            });
-
-            // 强制刷新MDUI组件 - 修复ID不匹配问题
-            new mdui.Select(type === 'edit' ? '#editCategorySelect' : '#newCategorySelect', {
-                autoInit: true,
-                position: 'bottom'
-            });
-        } catch (error) {
-            console.error('加载分类失败:', error);
-            utils.showSnackbar('分类加载失败');
-        }
-    },
-
-    handleCategorySubmit: async (e) => {
-        e.preventDefault();
-        
-        const categoryName = document.getElementById('categoryName').value.trim();
-        if (!categoryName) return utils.showSnackbar('分类名称不能为空', 'warning');
-
-        try {
-            const response = await fetch(`${API_CONFIG.baseURL}/categories`, {
-                method: 'POST',
-                headers: API_CONFIG.headers,
-                body: JSON.stringify({ name: categoryName })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                utils.showSnackbar('分类添加成功');
-                // 关闭对话框
-                const dialog = new mdui.Dialog(domCache.addCategoryDialog);
-                dialog.close();
-                // 重置表单
-                domCache.addCategoryForm.reset();
-                // 刷新分类列表和服务列表
-                await Promise.all([
-                    categoryManager.loadCategoriesForSelect('edit'),
-                    categoryManager.loadCategoriesForSelect('new'),
-                    serviceManager.loadServices()
-                ]);
-            } else {
-                throw new Error(result.error || '添加失败');
-            }
-        } catch (error) {
-            console.error('添加分类失败:', error);
-            utils.showSnackbar(error.message.includes('已存在') ?
-                '分类名称已存在' : error.message, 'error');
-        }
-    }
-};
-
-// 工具函数
-const utils = {
-    showSnackbar: (message, type = 'success') => {
-        const snackbar = new mdui.snackbar({
-            message: message,
-            position: 'bottom',
-            buttonText: '关闭',
-            timeout: 3000
-        });
-        snackbar.open();
-    }
-};
-
-// 初始化事件监听
-function initEventListeners() {
+// 绑定所有事件
+function bindEvents() {
     // 登录表单提交
-    domCache.loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await authManager.handleLogin(document.getElementById('password').value);
-        // 清空密码输入框
-        document.getElementById('password').value = '';
-    });
+    domCache.loginForm.addEventListener('submit', handleLogin);
+    
+    // 退出登录
+    domCache.logoutBtn.addEventListener('click', handleLogout);
+    
+    // 修改密码
+    domCache.changePasswordBtn.addEventListener('click', openPasswordDialog);
+    
+    // 服务管理相关事件
+    domCache.addServiceBtn.addEventListener('click', openAddServiceDialog);
+    domCache.saveServiceBtn.addEventListener('click', saveService);
+    
+    // 分类管理相关事件
+    domCache.addCategoryBtn.addEventListener('click', openAddCategoryDialog);
+    domCache.saveCategoryBtn.addEventListener('click', saveCategory);
+    
+    // 修改密码相关事件
+    domCache.savePasswordBtn.addEventListener('click', savePassword);
+}
 
-    // 返回主页并退出登录
-    domCache.backToHome.addEventListener('click', async (e) => {
-        e.preventDefault();
-        await authManager.handleLogout();
-    });
-
-    // 编辑服务表单提交
-    domCache.editServiceForm.addEventListener('submit', serviceManager.handleEditSubmit);
-
-    // 新增服务表单提交
-    domCache.addNewServiceForm.addEventListener('submit', serviceManager.handleAddSubmit);
-
-    // 添加分类表单提交
-    domCache.addCategoryForm.addEventListener('submit', categoryManager.handleCategorySubmit);
-
-    // 添加服务按钮点击
-    domCache.addServiceBtn.addEventListener('click', async () => {
-        // 先加载最新分类数据
-        await categoryManager.loadCategoriesForSelect('new');
-        // 然后打开对话框
-        const dialog = new mdui.Dialog(domCache.addServiceDialog);
-        dialog.open();
-    });
-
-    // 添加分类按钮点击
-    domCache.addCategoryBtn.addEventListener('click', () => {
-        const dialog = new mdui.Dialog(domCache.addCategoryDialog);
-        dialog.open();
-    });
-
-    // 确认删除按钮点击
-    domCache.confirmDeleteBtn.addEventListener('click', async () => {
-        await serviceManager.deleteService();
-    });
-
-    // 初始化浮动按钮
-    new mdui.Fab('#addFab', {
-        trigger: 'hover',
-        menuDelay: 100,
-        hysteresis: 8
+// 处理登录
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const password = domCache.passwordInput.value;
+    
+    if (!password) {
+        showSnackbar('请输入密码', 'error');
+        return;
+    }
+    
+    // 发送登录请求 - 注意：后端API路径是/admin/login而不是/api/admin/login
+    fetch('/admin/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('登录失败，请检查密码');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showSnackbar('登录成功');
+            // 显示管理页面
+            domCache.loginPage.style.display = 'none';
+            domCache.adminPage.style.display = 'block';
+            // 加载数据
+            loadAllData();
+        } else {
+            showSnackbar('登录失败：' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showSnackbar('登录失败：' + error.message, 'error');
+        console.error('登录错误:', error);
     });
 }
 
-// 初始化
-document.addEventListener('DOMContentLoaded', async () => {
-    // 初始化事件监听
-    initEventListeners();
+// 处理退出登录
+function handleLogout() {
+    // 发送退出登录请求 - 注意：后端API路径是/admin/logout而不是/api/admin/logout
+    fetch('/admin/logout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(() => {
+        // 无论成功与否，都跳转到登录页面
+        domCache.loginPage.style.display = 'block';
+        domCache.adminPage.style.display = 'none';
+        domCache.passwordInput.value = '';
+        showSnackbar('已退出登录');
+    })
+    .catch(error => {
+        console.error('退出登录错误:', error);
+        // 即使出错也跳转到登录页面
+        domCache.loginPage.style.display = 'block';
+        domCache.adminPage.style.display = 'none';
+        domCache.passwordInput.value = '';
+    });
+}
+
+// 加载所有数据
+function loadAllData() {
+    Promise.all([
+        loadServices(),
+        loadCategories()
+    ])
+    .then(() => {
+        // 更新服务分类下拉列表
+        updateServiceCategorySelect();
+        // 渲染服务和分类表格
+        renderServicesTable();
+        renderCategoriesTable();
+    })
+    .catch(error => {
+        showSnackbar('数据加载失败：' + error.message, 'error');
+        console.error('加载数据错误:', error);
+    });
+}
+
+// 加载服务数据
+function loadServices() {
+    return fetch('/api/services')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('获取服务数据失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            services = data;
+        });
+}
+
+// 加载分类数据
+function loadCategories() {
+    // 使用公开API获取分类数据，因为管理API中没有GET /api/categories
+    return fetch('/api/public/categories')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('获取分类数据失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            categories = data;
+        });
+}
+
+// 更新服务分类下拉列表
+function updateServiceCategorySelect() {
+    domCache.serviceCategorySelect.innerHTML = '';
     
-    // 检查认证状态并加载数据
-    await authManager.checkAuth();
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.ID;
+        option.textContent = category.Name;
+        domCache.serviceCategorySelect.appendChild(option);
+    });
+}
+
+// 渲染服务表格
+function renderServicesTable() {
+    const tbody = domCache.servicesTable.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    if (services.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="mdui-text-center mdui-p-4">
+                    <div class="empty-state">
+                        <i class="mdui-icon material-icons empty-state-icon">apps</i>
+                        <p>暂无服务数据</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    services.forEach(service => {
+        const tr = document.createElement('tr');
+        
+        // 获取分类名称
+        let categoryName = '未知分类';
+        const category = categories.find(c => c.ID === service.CategoryID);
+        if (category) {
+            categoryName = category.Name;
+        }
+        
+        tr.innerHTML = `
+            <td>${service.ID}</td>
+            <td>${service.Name}</td>
+            <td>
+                ${service.Icon ? 
+                    `<img src="${service.Icon}" width="24" height="24" alt="${service.Name}">` : 
+                    `<div class="service-icon-small"><i class="mdui-icon material-icons">apps</i></div>`
+                }
+            </td>
+            <td>${categoryName}</td>
+            <td>${service.IPURL || '-'}</td>
+            <td>${service.DomainURL}</td>
+            <td>${service.Description || '-'}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="mdui-btn mdui-btn-icon mdui-ripple" onclick="editService(${service.ID})">
+                        <i class="mdui-icon material-icons">edit</i>
+                    </button>
+                    <button class="mdui-btn mdui-btn-icon mdui-ripple mdui-btn-danger" onclick="deleteService(${service.ID})">
+                        <i class="mdui-icon material-icons">delete</i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+}
+
+// 渲染分类表格
+function renderCategoriesTable() {
+    const tbody = domCache.categoriesTable.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    if (categories.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="mdui-text-center mdui-p-4">
+                    <div class="empty-state">
+                        <i class="mdui-icon material-icons empty-state-icon">category</i>
+                        <p>暂无分类数据</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    categories.forEach(category => {
+        // 计算该分类下的服务数量
+        const serviceCount = services.filter(s => s.CategoryID === category.ID).length;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${category.ID}</td>
+            <td>${category.Name}</td>
+            <td>${serviceCount}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="mdui-btn mdui-btn-icon mdui-ripple" onclick="editCategory(${category.ID})">
+                        <i class="mdui-icon material-icons">edit</i>
+                    </button>
+                    <button class="mdui-btn mdui-btn-icon mdui-ripple mdui-btn-danger" onclick="deleteCategory(${category.ID})">
+                        <i class="mdui-icon material-icons">delete</i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        // 如果分类下有服务，禁用删除按钮
+        if (serviceCount > 0) {
+            const deleteBtn = tr.querySelector('button:last-child');
+            deleteBtn.disabled = true;
+            deleteBtn.classList.add('mdui-disabled');
+            deleteBtn.setAttribute('data-tooltip', '分类下有服务，无法删除');
+        }
+        
+        tbody.appendChild(tr);
+    });
+}
+
+// 打开添加服务对话框
+function openAddServiceDialog() {
+    // 重置表单
+    document.getElementById('serviceIdInput').value = '';
+    document.getElementById('serviceNameInput').value = '';
+    document.getElementById('serviceIconInput').value = '';
+    document.getElementById('serviceIpInput').value = '';
+    document.getElementById('serviceDomainInput').value = '';
+    document.getElementById('serviceDescriptionInput').value = '';
+    document.getElementById('serviceSortInput').value = '999';
+    
+    // 更新对话框标题
+    domCache.serviceDialog.querySelector('.mdui-dialog-title').textContent = '添加服务';
+    
+    // 打开对话框
+    serviceDialogInstance.open();
+}
+
+// 编辑服务
+function editService(id) {
+    const service = services.find(s => s.ID === id);
+    if (!service) {
+        showSnackbar('未找到该服务', 'error');
+        return;
+    }
+    
+    // 填充表单数据
+    document.getElementById('serviceIdInput').value = service.ID;
+    document.getElementById('serviceNameInput').value = service.Name || '';
+    document.getElementById('serviceIconInput').value = service.Icon || '';
+    document.getElementById('serviceCategorySelect').value = service.CategoryID;
+    document.getElementById('serviceIpInput').value = service.IPURL || '';
+    document.getElementById('serviceDomainInput').value = service.DomainURL || '';
+    document.getElementById('serviceDescriptionInput').value = service.Description || '';
+    document.getElementById('serviceSortInput').value = service.SortOrder || '999';
+    
+    // 更新对话框标题
+    domCache.serviceDialog.querySelector('.mdui-dialog-title').textContent = '编辑服务';
+    
+    // 打开对话框
+    serviceDialogInstance.open();
+}
+
+// 保存服务
+function saveService() {
+    const id = document.getElementById('serviceIdInput').value;
+    const name = document.getElementById('serviceNameInput').value.trim();
+    const icon = document.getElementById('serviceIconInput').value.trim();
+    const categoryId = document.getElementById('serviceCategorySelect').value;
+    const ipUrl = document.getElementById('serviceIpInput').value.trim();
+    const domainUrl = document.getElementById('serviceDomainInput').value.trim();
+    const description = document.getElementById('serviceDescriptionInput').value.trim();
+    const sortOrder = document.getElementById('serviceSortInput').value;
+    
+    // 表单验证
+    if (!name) {
+        showSnackbar('请输入服务名称', 'error');
+        return;
+    }
+    
+    if (!domainUrl) {
+        showSnackbar('请输入域名地址', 'error');
+        return;
+    }
+    
+    if (!categoryId) {
+        showSnackbar('请选择所属分类', 'error');
+        return;
+    }
+    
+    // 构造服务数据
+    const serviceData = {
+        Name: name,
+        Icon: icon,
+        CategoryID: parseInt(categoryId),
+        IPURL: ipUrl,
+        DomainURL: domainUrl,
+        Description: description,
+        SortOrder: parseInt(sortOrder) || 999
+    };
+    
+    let url = '/api/services';
+    let method = 'POST';
+    
+    // 如果是编辑模式，修改URL和方法
+    if (id) {
+        url += `/${id}`;
+        method = 'PUT';
+    }
+    
+    // 发送请求
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(serviceData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('保存服务失败');
+        }
+        return response.json();
+    })
+    .then(() => {
+        // 关闭对话框
+        serviceDialogInstance.close();
+        
+        // 重新加载数据
+        loadServices().then(() => {
+            renderServicesTable();
+            showSnackbar(id ? '服务更新成功' : '服务添加成功');
+        });
+    })
+    .catch(error => {
+        showSnackbar('保存服务失败：' + error.message, 'error');
+        console.error('保存服务错误:', error);
+    });
+}
+
+// 删除服务
+function deleteService(id) {
+    mdui.confirm('确定要删除该服务吗？', '确认删除', {
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmOnEnter: true,
+        onConfirm: function() {
+            // 发送删除请求
+            fetch(`/api/services/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('删除服务失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 重新加载数据
+                loadServices().then(() => {
+                    renderServicesTable();
+                    showSnackbar('服务删除成功');
+                });
+            })
+            .catch(error => {
+                showSnackbar('删除服务失败：' + error.message, 'error');
+                console.error('删除服务错误:', error);
+            });
+        }
+    });
+}
+
+// 打开添加分类对话框
+function openAddCategoryDialog() {
+    // 重置表单
+    document.getElementById('categoryIdInput').value = '';
+    document.getElementById('categoryNameInput').value = '';
+    
+    // 更新对话框标题
+    domCache.categoryDialog.querySelector('.mdui-dialog-title').textContent = '添加分类';
+    
+    // 打开对话框
+    categoryDialogInstance.open();
+}
+
+// 编辑分类
+function editCategory(id) {
+    const category = categories.find(c => c.ID === id);
+    if (!category) {
+        showSnackbar('未找到该分类', 'error');
+        return;
+    }
+    
+    // 填充表单数据
+    document.getElementById('categoryIdInput').value = category.ID;
+    document.getElementById('categoryNameInput').value = category.Name;
+    
+    // 更新对话框标题
+    domCache.categoryDialog.querySelector('.mdui-dialog-title').textContent = '编辑分类';
+    
+    // 打开对话框
+    categoryDialogInstance.open();
+}
+
+// 保存分类
+function saveCategory() {
+    const id = document.getElementById('categoryIdInput').value;
+    const name = document.getElementById('categoryNameInput').value.trim();
+    
+    // 表单验证
+    if (!name) {
+        showSnackbar('请输入分类名称', 'error');
+        return;
+    }
+    
+    // 构造分类数据
+    const categoryData = {
+        Name: name
+    };
+    
+    let url = '/api/categories';
+    let method = 'POST';
+    
+    // 如果是编辑模式，修改URL和方法
+    if (id) {
+        url += `/${id}`;
+        method = 'PUT';
+    }
+    
+    // 发送请求
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(categoryData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('保存分类失败');
+        }
+        return response.json();
+    })
+    .then(() => {
+        // 关闭对话框
+        categoryDialogInstance.close();
+        
+        // 重新加载数据
+        Promise.all([
+            loadCategories(),
+            loadServices()
+        ]).then(() => {
+            updateServiceCategorySelect();
+            renderCategoriesTable();
+            renderServicesTable();
+            showSnackbar(id ? '分类更新成功' : '分类添加成功');
+        });
+    })
+    .catch(error => {
+        showSnackbar('保存分类失败：' + error.message, 'error');
+        console.error('保存分类错误:', error);
+    });
+}
+
+// 删除分类
+function deleteCategory(id) {
+    // 检查分类下是否有服务
+    const serviceCount = services.filter(s => s.CategoryID === id).length;
+    if (serviceCount > 0) {
+        showSnackbar('分类下有服务，无法删除', 'error');
+        return;
+    }
+    
+    mdui.confirm('确定要删除该分类吗？', '确认删除', {
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmOnEnter: true,
+        onConfirm: function() {
+            // 发送删除请求
+            fetch(`/api/categories/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('删除分类失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 重新加载数据
+                Promise.all([
+                    loadCategories(),
+                    loadServices()
+                ]).then(() => {
+                    updateServiceCategorySelect();
+                    renderCategoriesTable();
+                    renderServicesTable();
+                    showSnackbar('分类删除成功');
+                });
+            })
+            .catch(error => {
+                showSnackbar('删除分类失败：' + error.message, 'error');
+                console.error('删除分类错误:', error);
+            });
+        }
+    });
+}
+
+// 打开修改密码对话框
+function openPasswordDialog() {
+    // 重置表单
+    document.getElementById('currentPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    
+    // 打开对话框
+    passwordDialogInstance.open();
+}
+
+// 保存密码
+function savePassword() {
+    const currentPassword = document.getElementById('currentPasswordInput').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
+    
+    // 表单验证
+    if (!currentPassword) {
+        showSnackbar('请输入当前密码', 'error');
+        return;
+    }
+    
+    if (!newPassword) {
+        showSnackbar('请输入新密码', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showSnackbar('两次输入的新密码不一致', 'error');
+        return;
+    }
+    
+    // 发送请求 - 注意：后端API路径是/admin/change-password而不是/api/admin/change-password
+    fetch('/admin/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            oldPassword: currentPassword,
+            newPassword: newPassword
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('修改密码失败');
+        }
+        return response.json();
+    })
+    .then(() => {
+        // 关闭对话框
+        passwordDialogInstance.close();
+        
+        // 显示成功消息
+        showSnackbar('密码修改成功');
+        
+        // 为了安全，修改密码后自动退出登录
+        setTimeout(() => {
+            handleLogout();
+        }, 2000);
+    })
+    .catch(error => {
+        showSnackbar('修改密码失败：' + error.message, 'error');
+        console.error('修改密码错误:', error);
+    });
+}
+
+// 关闭服务对话框
+function closeServiceDialog() {
+    serviceDialogInstance.close();
+}
+
+// 关闭分类对话框
+function closeCategoryDialog() {
+    categoryDialogInstance.close();
+}
+
+// 关闭密码对话框
+function closePasswordDialog() {
+    passwordDialogInstance.close();
+}
+
+// 显示提示消息
+function showSnackbar(message, type = 'success') {
+    // 设置不同类型的背景色
+    const backgroundColor = type === 'error' ? '#f44336' : '#4caf50';
+    
+    return new mdui.snackbar({
+        message: message,
+        position: 'bottom',
+        timeout: 3000,
+        closeOnOutsideClick: true,
+        selector: '#snackbar',
+        backgroundColor: backgroundColor
+    }).open();
+}
+
+// 页面加载完成后初始化应用
+document.addEventListener('DOMContentLoaded', initApp);
+
+// 添加全局错误处理
+window.addEventListener('error', function(event) {
+    console.error('全局错误:', event.error);
+});
+
+// 添加全局未捕获的Promise错误处理
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('未捕获的Promise错误:', event.reason);
 });
