@@ -175,6 +175,10 @@ func setupRouter() *fiber.App {
 		publicAPI.Get("/categories", getCategories)
 	}
 
+	// 认证相关（不需要认证的路由，放在认证中间件之前）
+	app.Post("/api/auth/login", adminLogin)
+	app.Post("/api/auth/logout", adminLogout)
+	
 	// 管理API (需要认证)
 	adminAPI := app.Group("/api")
 	adminAPI.Use(authMiddleware)
@@ -191,12 +195,10 @@ func setupRouter() *fiber.App {
 		adminAPI.Post("/categories", addCategory)
 		adminAPI.Put("/categories/:id", updateCategory)
 		adminAPI.Delete("/categories/:id", deleteCategory)
-	}
 
-	// 认证相关
-	app.Post("/api/auth/login", adminLogin)
-	app.Post("/api/auth/logout", adminLogout)
-	app.Post("/api/auth/change-password", authMiddleware, changePassword)
+		// 需要认证的认证相关路由
+		adminAPI.Post("/auth/change-password", changePassword)
+	}
 
 	// 主页面路由 - 使用新版前端
 	app.Get("/", func(c *fiber.Ctx) error {

@@ -10,112 +10,113 @@ const api = axios.create({
   },
 });
 
-// 请求拦截器
-api.interceptors.request.use(
-  (config) => {
-    // 可以在这里添加认证token
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// 响应拦截器
-api.interceptors.response.use(
-  (response) => {
-    // 后端直接返回数据，没有包裹在data字段中，所以直接返回response.data
-    return response.data;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // 服务相关API
 export const serviceApi = {
   // 获取所有服务（公开API）
-  getAll: async () => {
-    const response = await api.get<Service[]>('/public/services');
-    return response as unknown as Service[];
+  getAll: async (): Promise<Service[]> => {
+    const { data } = await api.get('/public/services');
+    // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
+    return (data as any[]).map(service => ({
+      ...service,
+      ip: service.ip_url,
+      domain: service.domain_url,
+    })) as Service[];
   },
   
   // 获取服务详情
-  getById: async (id: number) => {
-    const response = await api.get<Service>(`/services/${id}`);
-    return response as unknown as Service;
+  getById: async (id: number): Promise<Service> => {
+    const { data } = await api.get(`/services/${id}`);
+    // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
+    return {
+      ...data,
+      ip: data.ip_url,
+      domain: data.domain_url,
+    } as Service;
   },
   
   // 添加服务
-  create: async (service: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => {
-    const response = await api.post<Service>('/services', service);
-    return response as unknown as Service;
+  create: async (service: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
+    // 转换前端字段名称为后端期望的格式
+    const formattedService = {
+      name: service.name,
+      ip_url: service.ip,
+      domain_url: service.domain,
+      category_id: service.category_id,
+      description: service.description,
+      icon: service.icon,
+    };
+    const { data } = await api.post('/services', formattedService);
+    return data as Service;
   },
   
   // 更新服务
-  update: async (id: number, service: Omit<Service, 'id' | 'created_at' | 'updated_at'>) => {
-    const response = await api.put<Service>(`/services/${id}`, service);
-    return response as unknown as Service;
+  update: async (id: number, service: Omit<Service, 'id' | 'created_at' | 'updated_at'>): Promise<Service> => {
+    // 转换前端字段名称为后端期望的格式
+    const formattedService = {
+      name: service.name,
+      ip_url: service.ip,
+      domain_url: service.domain,
+      category_id: service.category_id,
+      description: service.description,
+      icon: service.icon,
+    };
+    const { data } = await api.put(`/services/${id}`, formattedService);
+    return data as Service;
   },
   
   // 删除服务
-  delete: async (id: number) => {
-    const response = await api.delete<void>(`/services/${id}`);
-    return response as unknown as void;
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/services/${id}`);
   },
 };
 
 // 分类相关API
 export const categoryApi = {
   // 获取所有分类（公开API）
-  getAll: async () => {
-    const response = await api.get<Category[]>('/public/categories');
-    return response as unknown as Category[];
+  getAll: async (): Promise<Category[]> => {
+    const { data } = await api.get('/public/categories');
+    return data as Category[];
   },
   
   // 获取分类详情
-  getById: async (id: number) => {
-    const response = await api.get<Category>(`/categories/${id}`);
-    return response as unknown as Category;
+  getById: async (id: number): Promise<Category> => {
+    const { data } = await api.get(`/categories/${id}`);
+    return data as Category;
   },
   
   // 添加分类
-  create: async (category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'service_count'>) => {
-    const response = await api.post<Category>('/categories', category);
-    return response as unknown as Category;
+  create: async (category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'service_count'>): Promise<Category> => {
+    const { data } = await api.post('/categories', category);
+    return data as Category;
   },
   
   // 更新分类
-  update: async (id: number, category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'service_count'>) => {
-    const response = await api.put<Category>(`/categories/${id}`, category);
-    return response as unknown as Category;
+  update: async (id: number, category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'service_count'>): Promise<Category> => {
+    const { data } = await api.put(`/categories/${id}`, category);
+    return data as Category;
   },
   
   // 删除分类
-  delete: async (id: number) => {
-    const response = await api.delete<void>(`/categories/${id}`);
-    return response as unknown as void;
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/categories/${id}`);
   },
 };
 
 // 认证相关API
 export const authApi = {
   // 登录
-  login: async (data: LoginRequest) => {
-    const response = await api.post<void>('/auth/login', data);
-    return response as unknown as void;
+  login: async (data: LoginRequest): Promise<void> => {
+    await api.post('/auth/login', data);
   },
   
   // 修改密码
-  changePassword: async (data: ChangePasswordRequest) => {
-    const response = await api.post<void>('/auth/change-password', data);
-    return response as unknown as void;
+  changePassword: async (data: ChangePasswordRequest): Promise<void> => {
+    await api.post('/auth/change-password', data);
   },
   
   // 退出登录
-  logout: async () => {
-    const response = await api.post<void>('/auth/logout');
-    return response as unknown as void;
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
   },
 };
 
