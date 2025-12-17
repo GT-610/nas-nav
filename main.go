@@ -168,16 +168,6 @@ func setupRouter() *fiber.App {
 	// 静态文件服务
 	app.Static("/static", "./static")
 
-	// 主页面路由 - 使用新版前端
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendFile("./static/html/index.html")
-	})
-
-	// 后台管理入口 - 使用新版前端
-	app.Get("/admin", func(c *fiber.Ctx) error {
-		return c.SendFile("./static/html/admin.html")
-	})
-
 	// 公开API
 	publicAPI := app.Group("/api/public")
 	{
@@ -204,9 +194,24 @@ func setupRouter() *fiber.App {
 	}
 
 	// 认证相关
-	app.Post("/admin/login", adminLogin)
-	app.Post("/admin/logout", adminLogout)
-	app.Post("/admin/change-password", authMiddleware, changePassword)
+	app.Post("/api/auth/login", adminLogin)
+	app.Post("/api/auth/logout", adminLogout)
+	app.Post("/api/auth/change-password", authMiddleware, changePassword)
+
+	// 主页面路由 - 使用新版前端
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
+
+	// 后台管理入口 - 使用新版前端
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
+
+	// 所有其他GET请求都返回主页面，让React Router处理路由
+	app.Get("/*", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
 
 	// 错误处理
 	app.Use(func(c *fiber.Ctx) error {
