@@ -165,18 +165,8 @@ func setupRouter() *fiber.App {
 		Expiration: 15 * time.Minute,
 	})
 
-	// 静态文件服务
-	app.Static("/static", "./static")
-
-	// 主页面路由 - 使用新版前端
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendFile("./static/html/index.html")
-	})
-
-	// 后台管理入口 - 使用新版前端
-	app.Get("/admin", func(c *fiber.Ctx) error {
-		return c.SendFile("./static/html/admin.html")
-	})
+	// 静态文件服务 - 支持直接访问根路径下的资源
+	app.Static("/", "./static")
 
 	// 公开API
 	publicAPI := app.Group("/api/public")
@@ -185,6 +175,10 @@ func setupRouter() *fiber.App {
 		publicAPI.Get("/categories", getCategories)
 	}
 
+	// 认证相关（不需要认证的路由，放在认证中间件之前）
+	app.Post("/api/auth/login", adminLogin)
+	app.Post("/api/auth/logout", adminLogout)
+	
 	// 管理API (需要认证)
 	adminAPI := app.Group("/api")
 	adminAPI.Use(authMiddleware)
@@ -201,12 +195,25 @@ func setupRouter() *fiber.App {
 		adminAPI.Post("/categories", addCategory)
 		adminAPI.Put("/categories/:id", updateCategory)
 		adminAPI.Delete("/categories/:id", deleteCategory)
+
+		// 需要认证的认证相关路由
+		adminAPI.Post("/auth/change-password", changePassword)
 	}
 
-	// 认证相关
-	app.Post("/admin/login", adminLogin)
-	app.Post("/admin/logout", adminLogout)
-	app.Post("/admin/change-password", authMiddleware, changePassword)
+	// 主页面路由 - 使用新版前端
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
+
+	// 后台管理入口 - 使用新版前端
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
+
+	// 所有其他GET请求都返回主页面，让React Router处理路由
+	app.Get("/*", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/index.html")
+	})
 
 	// 错误处理
 	app.Use(func(c *fiber.Ctx) error {

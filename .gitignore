@@ -33,3 +33,20 @@ go.work.sum
 
 # Database
 db/*
+
+# Frontend build output
+static/assets/
+static/index.html
+static/vite.svg
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# Editor/IDE - frontend
+frontend/.vscode/*
+!frontend/.vscode/extensions.json
+frontend/.idea/
+frontend/.DS_Store
