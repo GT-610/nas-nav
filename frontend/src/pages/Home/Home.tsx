@@ -108,7 +108,7 @@ const Home: React.FC = () => {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* 顶部导航栏 */}
       <Box sx={{ backgroundColor: 'primary.main', color: 'white', py: 2 }}>
-        <Container>
+        <Container maxWidth="xl">
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5" component="h1" sx={{ fontWeight: 500 }}>
               NAS 服务导航

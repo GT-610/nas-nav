@@ -178,7 +178,7 @@ func setupRouter() *fiber.App {
 	// 认证相关（不需要认证的路由，放在认证中间件之前）
 	app.Post("/api/auth/login", adminLogin)
 	app.Post("/api/auth/logout", adminLogout)
-	
+
 	// 管理API (需要认证)
 	adminAPI := app.Group("/api")
 	adminAPI.Use(authMiddleware)
@@ -359,7 +359,18 @@ func addService(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "添加服务失败：" + err.Error()})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": service.ID})
+	// 返回完整的服务对象
+	return c.Status(fiber.StatusCreated).JSON(map[string]interface{}{
+		"id":          service.ID,
+		"name":        service.Name,
+		"ip_url":      service.IPURL,
+		"domain_url":  service.DomainURL,
+		"category_id": service.CategoryID,
+		"category":    category.Name,
+		"sort_order":  service.SortOrder,
+		"description": service.Description,
+		"icon":        service.Icon,
+	})
 }
 
 // 更新服务信息
@@ -420,7 +431,27 @@ func updateService(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新服务失败：" + err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
+	// 加载关联的分类信息
+	var category models.Category
+	categoryName := "未分类"
+	if service.CategoryID > 0 {
+		if err := db.First(&category, service.CategoryID).Error; err == nil {
+			categoryName = category.Name
+		}
+	}
+
+	// 返回完整的服务对象
+	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
+		"id":          service.ID,
+		"name":        service.Name,
+		"ip_url":      service.IPURL,
+		"domain_url":  service.DomainURL,
+		"category_id": service.CategoryID,
+		"category":    categoryName,
+		"sort_order":  service.SortOrder,
+		"description": service.Description,
+		"icon":        service.Icon,
+	})
 }
 
 // 删除服务
@@ -528,7 +559,14 @@ func addCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "添加分类失败：" + err.Error()})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": category.ID})
+	// 返回完整的分类对象
+	return c.Status(fiber.StatusCreated).JSON(map[string]interface{}{
+		"id":            category.ID,
+		"name":          category.Name,
+		"service_count": 0,
+		"created_at":    category.CreatedAt.Format("2006-01-02 15:04:05"),
+		"updated_at":    category.UpdatedAt.Format("2006-01-02 15:04:05"),
+	})
 }
 
 // 更新分类信息
@@ -565,7 +603,18 @@ func updateCategory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新分类失败：" + err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
+	// 计算服务数量
+	var serviceCount int64
+	db.Model(&models.Service{}).Where("category_id = ?", category.ID).Count(&serviceCount)
+
+	// 返回完整的分类对象
+	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
+		"id":           category.ID,
+		"name":         category.Name,
+		"service_count": serviceCount,
+		"created_at":   category.CreatedAt.Format("2006-01-02 15:04:05"),
+		"updated_at":   category.UpdatedAt.Format("2006-01-02 15:04:05"),
+	})
 }
 
 // 删除分类

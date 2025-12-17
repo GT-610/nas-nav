@@ -96,33 +96,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* 顶部导航栏 */}
       <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            NAS 导航站 - 管理后台
-          </Typography>
-          
-          <IconButton
-            color="inherit"
-            onClick={() => setPasswordDialogOpen(true)}
-            title="修改密码"
-          >
-            <Lock />
-          </IconButton>
-          
-          <Button
-            color="inherit"
-            variant="outlined"
-            startIcon={<ExitToApp />}
-            onClick={handleLogout}
-            sx={{ ml: 2, textTransform: 'none' }}
-          >
-            退出登录
-          </Button>
-        </Toolbar>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              NAS 导航站 - 管理后台
+            </Typography>
+            
+            <IconButton
+              color="inherit"
+              onClick={() => setPasswordDialogOpen(true)}
+              title="修改密码"
+            >
+              <Lock />
+            </IconButton>
+            
+            <Button
+              color="inherit"
+              variant="outlined"
+              startIcon={<ExitToApp />}
+              onClick={handleLogout}
+              sx={{ ml: 2, textTransform: 'none' }}
+            >
+              退出登录
+            </Button>
+          </Toolbar>
+        </Container>
       </AppBar>
 
       {/* 主内容区 */}
-      <Container sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* 标签页 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs

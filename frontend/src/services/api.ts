@@ -12,9 +12,25 @@ const api = axios.create({
 
 // 服务相关API
 export const serviceApi = {
-  // 获取所有服务（公开API）
+  // 获取所有服务（公开API，不含id）
   getAll: async (): Promise<Service[]> => {
     const { data } = await api.get('/public/services');
+    // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
+    return (data as any[]).map(service => ({
+      ...service,
+      id: 0, // 公开API没有id，设为默认值
+      ip: service.ip_url,
+      domain: service.domain_url,
+      category_id: 0, // 公开API没有category_id，设为默认值
+      sort_order: 999, // 公开API没有sort_order，设为默认值
+      created_at: '', // 公开API没有created_at，设为默认值
+      updated_at: '', // 公开API没有updated_at，设为默认值
+    })) as Service[];
+  },
+  
+  // 获取所有服务（管理API，包含id）
+  getAllAdmin: async (): Promise<Service[]> => {
+    const { data } = await api.get('/services');
     // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
     return (data as any[]).map(service => ({
       ...service,
@@ -46,7 +62,14 @@ export const serviceApi = {
       icon: service.icon,
     };
     const { data } = await api.post('/services', formattedService);
-    return data as Service;
+    // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
+    return {
+      ...data,
+      ip: data.ip_url,
+      domain: data.domain_url,
+      created_at: '',
+      updated_at: '',
+    } as Service;
   },
   
   // 更新服务
@@ -61,7 +84,14 @@ export const serviceApi = {
       icon: service.icon,
     };
     const { data } = await api.put(`/services/${id}`, formattedService);
-    return data as Service;
+    // 转换后端返回的ip_url和domain_url为前端期望的ip和domain
+    return {
+      ...data,
+      ip: data.ip_url,
+      domain: data.domain_url,
+      created_at: '',
+      updated_at: '',
+    } as Service;
   },
   
   // 删除服务

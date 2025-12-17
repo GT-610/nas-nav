@@ -62,7 +62,7 @@ const ServicesTab: React.FC = () => {
         setError(null);
 
         const [servicesResponse, categoriesResponse] = await Promise.all([
-          serviceApi.getAll(),
+          serviceApi.getAllAdmin(),
           categoryApi.getAll(),
         ]);
 
