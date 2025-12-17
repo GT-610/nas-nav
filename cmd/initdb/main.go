@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// 连接数据库
-	database, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{}
+	database, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}

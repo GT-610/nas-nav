@@ -1,21 +1,18 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"flag"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/session/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -24,6 +21,7 @@ import (
 
 var db *gorm.DB
 var debugMode bool
+var sessionManager *session.Session
 
 func main() {
 	// 解析命令行参数
@@ -51,14 +49,14 @@ func main() {
 	initDB(false)
 
 	// 设置路由
-	router := setupRouter()
+	app := setupRouter()
 
 	// 启动服务器
 	log.Println("服务启动在 http://0.0.0.0:5000")
 	if debugMode {
 		log.Println("[调试模式] 已启用")
 	}
-	err := router.Run("0.0.0.0:5000")
+	err := app.Listen(":5000")
 	if err != nil {
 		log.Fatalf("启动服务器失败: %v", err)
 	}
@@ -141,114 +139,100 @@ func initDefaultData() {
 	}
 }
 
-func setupRouter() *gin.Engine {
-	// 根据模式设置gin运行模式
-	if debugMode {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
+func setupRouter() *fiber.App {
 	// 创建路由引擎
-	router := gin.Default()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			code := fiber.StatusInternalServerError
+			if e, ok := err.(*fiber.Error); ok {
+				code = e.Code
+			}
+			return c.Status(code).JSON(fiber.Map{"error": err.Error()})
+		},
+	})
 
 	// 配置CORS
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin,Content-Type,Authorization",
+		ExposeHeaders:    "Content-Length",
 		AllowCredentials: true,
 	}))
 
-	// 生成随机密钥
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		log.Fatalf("生成会话密钥失败: %v", err)
-	}
-	secretKey := hex.EncodeToString(key)
-
 	// 配置会话
-	store := cookie.NewStore([]byte(secretKey))
-	store.Options(sessions.Options{
-		HttpOnly: true,
-		Path:     "/",
-		MaxAge:   15 * 60, // 15分钟
+	sessionManager = session.New(session.Config{
+		Expiration: 15 * time.Minute,
 	})
-	router.Use(sessions.Sessions("nas-nav-session", store))
 
 	// 静态文件服务
-	router.Static("/static", "./static")
+	app.Static("/static", "./static")
 
 	// 主页面路由 - 使用新版前端
-	router.GET("/", func(c *gin.Context) {
-		c.File("./static/html/index.html")
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/html/index.html")
 	})
 
 	// 后台管理入口 - 使用新版前端
-	router.GET("/admin", func(c *gin.Context) {
-		c.File("./static/html/admin.html")
+	app.Get("/admin", func(c *fiber.Ctx) error {
+		return c.SendFile("./static/html/admin.html")
 	})
 
 	// 公开API
-	publicAPI := router.Group("/api/public")
+	publicAPI := app.Group("/api/public")
 	{
-		publicAPI.GET("/services", getPublicServices)
-		publicAPI.GET("/categories", getCategories)
+		publicAPI.Get("/services", getPublicServices)
+		publicAPI.Get("/categories", getCategories)
 	}
 
 	// 管理API (需要认证)
-	adminAPI := router.Group("/api")
-	adminAPI.Use(authMiddleware())
+	adminAPI := app.Group("/api")
+	adminAPI.Use(authMiddleware)
 	{
 		// 服务管理
-		adminAPI.GET("/services", getServices)
-		adminAPI.POST("/services", addService)
-		adminAPI.PUT("/services/:id", updateService)
-		adminAPI.DELETE("/services/:id", deleteService)
-		adminAPI.POST("/services/reorder", reorderServices)
+		adminAPI.Get("/services", getServices)
+		adminAPI.Post("/services", addService)
+		adminAPI.Put("/services/:id", updateService)
+		adminAPI.Delete("/services/:id", deleteService)
+		adminAPI.Post("/services/reorder", reorderServices)
 
 		// 分类管理
-		adminAPI.POST("/categories", addCategory)
-		adminAPI.PUT("/categories/:id", updateCategory)
-		adminAPI.DELETE("/categories/:id", deleteCategory)
+		adminAPI.Get("/categories", getCategories)
+		adminAPI.Post("/categories", addCategory)
+		adminAPI.Put("/categories/:id", updateCategory)
+		adminAPI.Delete("/categories/:id", deleteCategory)
 	}
 
 	// 认证相关
-	router.POST("/admin/login", adminLogin)
-	router.POST("/admin/logout", adminLogout)
-	router.POST("/admin/change-password", authMiddleware(), changePassword)
+	app.Post("/admin/login", adminLogin)
+	app.Post("/admin/logout", adminLogout)
+	app.Post("/admin/change-password", authMiddleware, changePassword)
 
 	// 错误处理
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "资源未找到"})
+	app.Use(func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "资源未找到"})
 	})
 
-	return router
+	return app
 }
 
 // 认证中间件
-func authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		authenticated := session.Get("authenticated")
+func authMiddleware(c *fiber.Ctx) error {
+	sess := sessionManager.Get(c)
+	authenticated := sess.Get("authenticated")
 
-		if authenticated != true {
-			c.JSON(http.StatusForbidden, gin.H{"error": "未授权访问"})
-			c.Abort()
-			return
-		}
-
-		c.Next()
+	if authenticated != true {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "未授权访问"})
 	}
+
+	return c.Next()
 }
 
 // 获取公开服务数据
-func getPublicServices(c *gin.Context) {
+func getPublicServices(c *fiber.Ctx) error {
 	var services []models.Service
 	if err := db.Preload("Category").Order("sort_order").Find(&services).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "数据库查询失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库查询失败"})
 	}
 
 	// 转换为前端需要的格式
@@ -270,15 +254,14 @@ func getPublicServices(c *gin.Context) {
 		result = append(result, item)
 	}
 
-	c.JSON(http.StatusOK, result)
+	return c.JSON(result)
 }
 
 // 获取所有分类
-func getCategories(c *gin.Context) {
+func getCategories(c *fiber.Ctx) error {
 	var categories []models.Category
 	if err := db.Order("id").Find(&categories).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "分类查询失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "分类查询失败"})
 	}
 
 	result := make([]map[string]interface{}, 0)
@@ -289,15 +272,14 @@ func getCategories(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, result)
+	return c.JSON(result)
 }
 
 // 获取所有服务（管理用）
-func getServices(c *gin.Context) {
+func getServices(c *fiber.Ctx) error {
 	var services []models.Service
 	if err := db.Preload("Category").Order("sort_order").Find(&services).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "数据库查询失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库查询失败"})
 	}
 
 	result := make([]map[string]interface{}, 0)
@@ -316,30 +298,39 @@ func getServices(c *gin.Context) {
 		result = append(result, item)
 	}
 
-	c.JSON(http.StatusOK, result)
+	return c.JSON(result)
 }
 
 // 添加新服务
-func addService(c *gin.Context) {
+func addService(c *fiber.Ctx) error {
 	var serviceInput struct {
-		Name        string `json:"name" binding:"required"`
-		IPURL       string `json:"ip_url" binding:"required"`
-		DomainURL   string `json:"domain_url" binding:"required"`
-		CategoryID  uint   `json:"category_id" binding:"required"`
+		Name        string `json:"name"`
+		IPURL       string `json:"ip_url"`
+		DomainURL   string `json:"domain_url"`
+		CategoryID  uint   `json:"category_id"`
 		Description string `json:"description"`
 		Icon        string `json:"icon"`
 	}
 
-	if err := c.ShouldBindJSON(&serviceInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.BodyParser(&serviceInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
+	}
+
+	// 检查必填字段
+	if serviceInput.Name == "" || serviceInput.IPURL == "" || serviceInput.DomainURL == "" || serviceInput.CategoryID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "缺少必填字段"})
+	}
+
+	// 检查分类是否存在
+	var category models.Category
+	if err := db.First(&category, serviceInput.CategoryID).Error; err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "指定的分类不存在"})
 	}
 
 	// 检查服务名称是否已存在
 	var existingService models.Service
 	if err := db.Where("name = ?", serviceInput.Name).First(&existingService).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "服务名称已存在"})
-		return
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "服务名称已存在"})
 	}
 
 	// 获取最大排序值
@@ -358,21 +349,19 @@ func addService(c *gin.Context) {
 	}
 
 	if err := db.Create(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "添加服务失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "添加服务失败：" + err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"id": service.ID})
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": service.ID})
 }
 
 // 更新服务信息
-func updateService(c *gin.Context) {
-	serviceID := c.Param("id")
+func updateService(c *fiber.Ctx) error {
+	serviceID := c.Params("id")
 
 	var service models.Service
 	if err := db.First(&service, serviceID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "服务不存在"})
-		return
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "服务不存在"})
 	}
 
 	var serviceInput struct {
@@ -384,19 +373,26 @@ func updateService(c *gin.Context) {
 		Icon        string `json:"icon"`
 	}
 
-	if err := c.ShouldBindJSON(&serviceInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.BodyParser(&serviceInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
 	}
 
 	// 如果更新了名称，检查是否已存在
 	if serviceInput.Name != "" && serviceInput.Name != service.Name {
 		var existingService models.Service
 		if err := db.Where("name = ? AND id != ?", serviceInput.Name, service.ID).First(&existingService).Error; err == nil {
-			c.JSON(http.StatusConflict, gin.H{"error": "服务名称已存在"})
-			return
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "服务名称已存在"})
 		}
 		service.Name = serviceInput.Name
+	}
+
+	// 如果更新了分类，检查分类是否存在
+	if serviceInput.CategoryID > 0 && serviceInput.CategoryID != service.CategoryID {
+		var category models.Category
+		if err := db.First(&category, serviceInput.CategoryID).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "指定的分类不存在"})
+		}
+		service.CategoryID = serviceInput.CategoryID
 	}
 
 	// 更新其他字段
@@ -406,9 +402,6 @@ func updateService(c *gin.Context) {
 	if serviceInput.DomainURL != "" {
 		service.DomainURL = serviceInput.DomainURL
 	}
-	if serviceInput.CategoryID > 0 {
-		service.CategoryID = serviceInput.CategoryID
-	}
 	if serviceInput.Description != "" {
 		service.Description = serviceInput.Description
 	}
@@ -417,42 +410,61 @@ func updateService(c *gin.Context) {
 	}
 
 	if err := db.Save(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新服务失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新服务失败：" + err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 删除服务
-func deleteService(c *gin.Context) {
-	serviceID := c.Param("id")
+func deleteService(c *fiber.Ctx) error {
+	serviceID := c.Params("id")
 
 	var service models.Service
 	if err := db.First(&service, serviceID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "服务不存在"})
-		return
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "服务不存在"})
 	}
 
 	deletedOrder := service.SortOrder
 
-	if err := db.Delete(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除失败：该服务可能被其他数据关联"})
-		return
+	// 使用事务确保数据一致性
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库事务失败"})
+	}
+
+	// 删除服务
+	if err := tx.Delete(&service).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "删除失败：该服务可能被其他数据关联"})
 	}
 
 	// 更新排序
-	db.Model(&models.Service{}).Where("sort_order > ?", deletedOrder).Update("sort_order", gorm.Expr("sort_order - 1"))
+	if err := tx.Model(&models.Service{}).Where("sort_order > ?", deletedOrder).Update("sort_order", gorm.Expr("sort_order - 1")).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新排序失败"})
+	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "提交事务失败"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 重新排序服务
-func reorderServices(c *gin.Context) {
+func reorderServices(c *fiber.Ctx) error {
 	var newOrder []uint
-	if err := c.ShouldBindJSON(&newOrder); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.BodyParser(&newOrder); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	// 使用事务确保数据一致性
@@ -464,174 +476,181 @@ func reorderServices(c *gin.Context) {
 	}()
 
 	if err := tx.Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "数据库事务失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库事务失败"})
 	}
 
 	for index, serviceID := range newOrder {
 		if err := tx.Model(&models.Service{}).Where("id = ?", serviceID).Update("sort_order", index+1).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "排序更新失败"})
-			return
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "排序更新失败"})
 		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "排序更新失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "排序更新失败"})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 添加新分类
-func addCategory(c *gin.Context) {
+func addCategory(c *fiber.Ctx) error {
 	var categoryInput struct {
-		Name string `json:"name" binding:"required"`
+		Name string `json:"name"`
 	}
 
-	if err := c.ShouldBindJSON(&categoryInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.BodyParser(&categoryInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
+	}
+
+	// 检查必填字段
+	if categoryInput.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "缺少必填字段"})
 	}
 
 	// 检查分类名称是否已存在
 	var existingCategory models.Category
 	if err := db.Where("name = ?", categoryInput.Name).First(&existingCategory).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "分类名称已存在"})
-		return
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "分类名称已存在"})
 	}
 
 	// 创建新分类
 	category := models.Category{Name: categoryInput.Name}
 
 	if err := db.Create(&category).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "添加分类失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "添加分类失败：" + err.Error()})
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"id": category.ID})
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": category.ID})
 }
 
 // 更新分类信息
-func updateCategory(c *gin.Context) {
-	categoryID := c.Param("id")
+func updateCategory(c *fiber.Ctx) error {
+	categoryID := c.Params("id")
 
 	var category models.Category
 	if err := db.First(&category, categoryID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "分类不存在"})
-		return
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "分类不存在"})
 	}
 
 	var categoryInput struct {
-		Name string `json:"name" binding:"required"`
+		Name string `json:"name"`
 	}
 
-	if err := c.ShouldBindJSON(&categoryInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.BodyParser(&categoryInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
+	}
+
+	// 检查必填字段
+	if categoryInput.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "缺少必填字段"})
 	}
 
 	// 检查分类名称是否已存在（排除当前分类）
 	var existingCategory models.Category
 	if err := db.Where("name = ? AND id != ?", categoryInput.Name, category.ID).First(&existingCategory).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "分类名称已存在"})
-		return
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "分类名称已存在"})
 	}
 
 	category.Name = categoryInput.Name
 
 	if err := db.Save(&category).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新分类失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新分类失败：" + err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 删除分类
-func deleteCategory(c *gin.Context) {
-	categoryID := c.Param("id")
+func deleteCategory(c *fiber.Ctx) error {
+	categoryID := c.Params("id")
 
 	var category models.Category
 	if err := db.First(&category, categoryID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "分类不存在"})
-		return
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "分类不存在"})
 	}
 
 	// 检查是否有服务关联
 	var serviceCount int64
-	db.Model(&models.Service{}).Where("category_id = ?", categoryID).Count(&serviceCount)
+	if err := db.Model(&models.Service{}).Where("category_id = ?", categoryID).Count(&serviceCount).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "查询服务数量失败：" + err.Error()})
+	}
 	if serviceCount > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "请先删除该分类下的所有服务"})
-		return
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "请先删除该分类下的所有服务"})
 	}
 
 	if err := db.Delete(&category).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除分类失败"})
-		return
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "删除分类失败：" + err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 管理员登录
-func adminLogin(c *gin.Context) {
+func adminLogin(c *fiber.Ctx) error {
 	var loginInput struct {
-		Password string `json:"password" binding:"required"`
+		Password string `json:"password"`
 	}
 
-	if err := c.ShouldBindJSON(&loginInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "需要密码字段"})
-		return
+	if err := c.BodyParser(&loginInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要密码字段"})
+	}
+
+	// 检查必填字段
+	if loginInput.Password == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要密码字段"})
 	}
 
 	var auth models.Auth
 	if err := db.First(&auth).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "无效凭证"})
-		return
+		log.Println("登录尝试失败：无法获取认证信息")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "无效凭证"})
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(auth.PasswordHash), []byte(loginInput.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "无效凭证"})
-		return
+		log.Println("登录尝试失败：密码错误")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "无效凭证"})
 	}
 
 	// 设置会话
-	session := sessions.Default(c)
-	session.Clear()
-	session.Set("authenticated", true)
-	session.Save()
+	sess := sessionManager.Get(c)
+	sess.Set("authenticated", true)
+	sess.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	log.Println("管理员登录成功")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 管理员登出
-func adminLogout(c *gin.Context) {
-	session := sessions.Default(c)
-	session.Clear()
-	session.Save()
+func adminLogout(c *fiber.Ctx) error {
+	sess := sessionManager.Get(c)
+	sess.Set("authenticated", false)
+	sess.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	log.Println("管理员登出成功")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 修改管理员密码
-func changePassword(c *gin.Context) {
+func changePassword(c *fiber.Ctx) error {
 	var passwordInput struct {
-		OldPassword string `json:"oldPassword" binding:"required"`
-		NewPassword string `json:"newPassword" binding:"required"`
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
 	}
 
-	if err := c.ShouldBindJSON(&passwordInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "需要原密码和新密码字段"})
-		return
+	if err := c.BodyParser(&passwordInput); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要原密码和新密码字段"})
+	}
+
+	// 检查必填字段
+	if passwordInput.OldPassword == "" || passwordInput.NewPassword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要原密码和新密码字段"})
 	}
 
 	// 验证新密码复杂度
 	if len(passwordInput.NewPassword) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "后端提示：密码长度至少8位"})
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "后端提示：密码长度至少8位"})
 	}
 
 	hasUpperCase := false
@@ -646,38 +665,42 @@ func changePassword(c *gin.Context) {
 	}
 
 	if !hasUpperCase {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "后端提示：必须包含至少一个大写字母"})
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "后端提示：必须包含至少一个大写字母"})
 	}
 	if !hasDigit {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "后端提示：必须包含至少一个数字"})
-		return
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "后端提示：必须包含至少一个数字"})
 	}
 
 	var auth models.Auth
 	if err := db.First(&auth).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取认证信息失败"})
-		return
+		log.Println("密码修改失败：无法获取认证信息")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "获取认证信息失败"})
 	}
 
 	// 验证原密码
 	if err := bcrypt.CompareHashAndPassword([]byte(auth.PasswordHash), []byte(passwordInput.OldPassword)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "原密码错误"})
-		return
+		log.Println("密码修改失败：原密码错误")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "原密码错误"})
 	}
 
 	// 更新密码
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(passwordInput.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成密码哈希失败"})
-		return
+		log.Println("密码修改失败：生成密码哈希失败")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "生成密码哈希失败"})
 	}
 
 	auth.PasswordHash = string(newPasswordHash)
 	if err := db.Save(&auth).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新密码失败"})
-		return
+		log.Println("密码修改失败：保存密码哈希失败")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "更新密码失败"})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	// 清除会话，强制重新登录，增强安全性
+	sess := sessionManager.Get(c)
+	sess.Set("authenticated", false)
+	sess.Save()
+
+	log.Println("密码修改成功")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
