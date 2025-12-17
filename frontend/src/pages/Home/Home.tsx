@@ -36,9 +36,9 @@ const Home: React.FC = () => {
           categoryApi.getAll(),
         ]);
 
-        // API响应返回的是ApiResponse<T>类型，所以需要获取data属性
-        const fetchedServices = servicesResponse.data;
-        const fetchedCategories = categoriesResponse.data;
+        // API响应拦截器已经处理过，直接获取数据
+        const fetchedServices = servicesResponse;
+        const fetchedCategories = categoriesResponse;
 
         // 为服务添加分类信息
         const servicesWithCategories = fetchedServices.map((service: Service) => {
@@ -127,7 +127,7 @@ const Home: React.FC = () => {
       </Box>
 
       {/* 主内容区 */}
-      <Container sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* 搜索栏 */}
         <SearchBar
           searchTerm={searchTerm}
@@ -162,7 +162,7 @@ const Home: React.FC = () => {
         ) : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
             {filteredServices.map((service) => (
-              <Box key={service.id} sx={{ flex: '1 1 250px', maxWidth: { xs: '100%', sm: '50%', md: '33%', lg: '25%' } }}>
+              <Box key={service.id} sx={{ flex: '1 1 250px' }}>
                 <ServiceCard service={service} />
               </Box>
             ))}

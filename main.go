@@ -165,8 +165,8 @@ func setupRouter() *fiber.App {
 		Expiration: 15 * time.Minute,
 	})
 
-	// 静态文件服务
-	app.Static("/static", "./static")
+	// 静态文件服务 - 支持直接访问根路径下的资源
+	app.Static("/", "./static")
 
 	// 公开API
 	publicAPI := app.Group("/api/public")

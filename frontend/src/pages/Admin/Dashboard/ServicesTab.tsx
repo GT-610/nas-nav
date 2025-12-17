@@ -66,8 +66,8 @@ const ServicesTab: React.FC = () => {
           categoryApi.getAll(),
         ]);
 
-        setServices(servicesResponse.data);
-        setCategories(categoriesResponse.data);
+        setServices(servicesResponse);
+        setCategories(categoriesResponse);
       } catch (err) {
         setError('获取数据失败，请稍后重试');
         console.error('Error fetching data:', err);
@@ -126,13 +126,13 @@ const ServicesTab: React.FC = () => {
         // 更新服务
         const response = await serviceApi.update(editingService.id, formData);
         setServices(services.map(service => 
-          service.id === editingService.id ? response.data : service
+          service.id === editingService.id ? response : service
         ));
         setSnackbarMessage('服务更新成功');
       } else {
         // 添加服务
         const response = await serviceApi.create(formData);
-        setServices([...services, response.data]);
+        setServices([...services, response]);
         setSnackbarMessage('服务添加成功');
       }
 

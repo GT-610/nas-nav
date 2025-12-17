@@ -51,7 +51,7 @@ const CategoriesTab: React.FC = () => {
         setError(null);
 
         const response = await categoryApi.getAll();
-        setCategories(response.data);
+        setCategories(response);
       } catch (err) {
         setError('获取数据失败，请稍后重试');
         console.error('Error fetching categories:', err);
@@ -98,13 +98,13 @@ const CategoriesTab: React.FC = () => {
         // 更新分类
         const response = await categoryApi.update(editingCategory.id, formData);
         setCategories(categories.map(category => 
-          category.id === editingCategory.id ? response.data : category
+          category.id === editingCategory.id ? response : category
         ));
         setSnackbarMessage('分类更新成功');
       } else {
         // 添加分类
         const response = await categoryApi.create(formData);
-        setCategories([...categories, response.data]);
+        setCategories([...categories, response]);
         setSnackbarMessage('分类添加成功');
       }
 
