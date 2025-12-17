@@ -157,7 +157,7 @@ func setupRouter() *fiber.App {
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Authorization",
 		ExposeHeaders:    "Content-Length",
-		AllowCredentials: true,
+		AllowCredentials: false,
 	}))
 
 	// 配置会话
