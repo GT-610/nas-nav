@@ -8,11 +8,13 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/gofiber/fiber/v3/middleware/static"
+
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/session/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/session"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -21,7 +23,6 @@ import (
 
 var db *gorm.DB
 var debugMode bool
-var sessionManager *session.Session
 
 func main() {
 	// 解析命令行参数
@@ -142,7 +143,7 @@ func initDefaultData() {
 func setupRouter() *fiber.App {
 	// 创建路由引擎
 	app := fiber.New(fiber.Config{
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
+		ErrorHandler: func(c fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
@@ -153,20 +154,20 @@ func setupRouter() *fiber.App {
 
 	// 配置CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
-		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin,Content-Type,Authorization",
-		ExposeHeaders:    "Content-Length",
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 	}))
 
-	// 配置会话
-	sessionManager = session.New(session.Config{
-		Expiration: 15 * time.Minute,
-	})
+	// 配置会话中间件
+	app.Use(session.New(session.Config{
+		IdleTimeout: 15 * time.Minute,
+	}))
 
 	// 静态文件服务 - 支持直接访问根路径下的资源
-	app.Static("/", "./static")
+	app.Get("/*", static.New("./static"))
 
 	// 公开API
 	publicAPI := app.Group("/api/public")
@@ -178,7 +179,7 @@ func setupRouter() *fiber.App {
 	// 认证相关（不需要认证的路由，放在认证中间件之前）
 	app.Post("/api/auth/login", adminLogin)
 	app.Post("/api/auth/logout", adminLogout)
-	
+
 	// 管理API (需要认证)
 	adminAPI := app.Group("/api")
 	adminAPI.Use(authMiddleware)
@@ -201,22 +202,22 @@ func setupRouter() *fiber.App {
 	}
 
 	// 主页面路由 - 使用新版前端
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendFile("./static/index.html")
 	})
 
 	// 后台管理入口 - 使用新版前端
-	app.Get("/admin", func(c *fiber.Ctx) error {
+	app.Get("/admin", func(c fiber.Ctx) error {
 		return c.SendFile("./static/index.html")
 	})
 
 	// 所有其他GET请求都返回主页面，让React Router处理路由
-	app.Get("/*", func(c *fiber.Ctx) error {
+	app.Get("/*", func(c fiber.Ctx) error {
 		return c.SendFile("./static/index.html")
 	})
 
 	// 错误处理
-	app.Use(func(c *fiber.Ctx) error {
+	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "资源未找到"})
 	})
 
@@ -224,8 +225,8 @@ func setupRouter() *fiber.App {
 }
 
 // 认证中间件
-func authMiddleware(c *fiber.Ctx) error {
-	sess := sessionManager.Get(c)
+func authMiddleware(c fiber.Ctx) error {
+	sess := session.FromContext(c)
 	authenticated := sess.Get("authenticated")
 
 	if authenticated != true {
@@ -236,7 +237,7 @@ func authMiddleware(c *fiber.Ctx) error {
 }
 
 // 获取公开服务数据
-func getPublicServices(c *fiber.Ctx) error {
+func getPublicServices(c fiber.Ctx) error {
 	var services []models.Service
 	if err := db.Preload("Category").Order("sort_order").Find(&services).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库查询失败"})
@@ -265,7 +266,7 @@ func getPublicServices(c *fiber.Ctx) error {
 }
 
 // 获取所有分类
-func getCategories(c *fiber.Ctx) error {
+func getCategories(c fiber.Ctx) error {
 	var categories []models.Category
 	if err := db.Order("id").Find(&categories).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "分类查询失败"})
@@ -283,7 +284,7 @@ func getCategories(c *fiber.Ctx) error {
 }
 
 // 获取所有服务（管理用）
-func getServices(c *fiber.Ctx) error {
+func getServices(c fiber.Ctx) error {
 	var services []models.Service
 	if err := db.Preload("Category").Order("sort_order").Find(&services).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "数据库查询失败"})
@@ -309,7 +310,7 @@ func getServices(c *fiber.Ctx) error {
 }
 
 // 添加新服务
-func addService(c *fiber.Ctx) error {
+func addService(c fiber.Ctx) error {
 	var serviceInput struct {
 		Name        string `json:"name"`
 		IPURL       string `json:"ip_url"`
@@ -319,7 +320,7 @@ func addService(c *fiber.Ctx) error {
 		Icon        string `json:"icon"`
 	}
 
-	if err := c.BodyParser(&serviceInput); err != nil {
+	if err := c.Bind().Body(&serviceInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
 	}
 
@@ -363,7 +364,7 @@ func addService(c *fiber.Ctx) error {
 }
 
 // 更新服务信息
-func updateService(c *fiber.Ctx) error {
+func updateService(c fiber.Ctx) error {
 	serviceID := c.Params("id")
 
 	var service models.Service
@@ -380,7 +381,7 @@ func updateService(c *fiber.Ctx) error {
 		Icon        string `json:"icon"`
 	}
 
-	if err := c.BodyParser(&serviceInput); err != nil {
+	if err := c.Bind().Body(&serviceInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
 	}
 
@@ -424,7 +425,7 @@ func updateService(c *fiber.Ctx) error {
 }
 
 // 删除服务
-func deleteService(c *fiber.Ctx) error {
+func deleteService(c fiber.Ctx) error {
 	serviceID := c.Params("id")
 
 	var service models.Service
@@ -468,9 +469,9 @@ func deleteService(c *fiber.Ctx) error {
 }
 
 // 重新排序服务
-func reorderServices(c *fiber.Ctx) error {
+func reorderServices(c fiber.Ctx) error {
 	var newOrder []uint
-	if err := c.BodyParser(&newOrder); err != nil {
+	if err := c.Bind().Body(&newOrder); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -501,12 +502,12 @@ func reorderServices(c *fiber.Ctx) error {
 }
 
 // 添加新分类
-func addCategory(c *fiber.Ctx) error {
+func addCategory(c fiber.Ctx) error {
 	var categoryInput struct {
 		Name string `json:"name"`
 	}
 
-	if err := c.BodyParser(&categoryInput); err != nil {
+	if err := c.Bind().Body(&categoryInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
 	}
 
@@ -532,7 +533,7 @@ func addCategory(c *fiber.Ctx) error {
 }
 
 // 更新分类信息
-func updateCategory(c *fiber.Ctx) error {
+func updateCategory(c fiber.Ctx) error {
 	categoryID := c.Params("id")
 
 	var category models.Category
@@ -544,7 +545,7 @@ func updateCategory(c *fiber.Ctx) error {
 		Name string `json:"name"`
 	}
 
-	if err := c.BodyParser(&categoryInput); err != nil {
+	if err := c.Bind().Body(&categoryInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "请求参数错误：" + err.Error()})
 	}
 
@@ -569,7 +570,7 @@ func updateCategory(c *fiber.Ctx) error {
 }
 
 // 删除分类
-func deleteCategory(c *fiber.Ctx) error {
+func deleteCategory(c fiber.Ctx) error {
 	categoryID := c.Params("id")
 
 	var category models.Category
@@ -594,12 +595,12 @@ func deleteCategory(c *fiber.Ctx) error {
 }
 
 // 管理员登录
-func adminLogin(c *fiber.Ctx) error {
+func adminLogin(c fiber.Ctx) error {
 	var loginInput struct {
 		Password string `json:"password"`
 	}
 
-	if err := c.BodyParser(&loginInput); err != nil {
+	if err := c.Bind().Body(&loginInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要密码字段"})
 	}
 
@@ -621,32 +622,37 @@ func adminLogin(c *fiber.Ctx) error {
 	}
 
 	// 设置会话
-	sess := sessionManager.Get(c)
+	sess := session.FromContext(c)
+	// 重新生成会话ID以防止会话固定攻击
+	if err := sess.Regenerate(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "会话错误"})
+	}
 	sess.Set("authenticated", true)
-	sess.Save()
 
 	log.Println("管理员登录成功")
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 管理员登出
-func adminLogout(c *fiber.Ctx) error {
-	sess := sessionManager.Get(c)
-	sess.Set("authenticated", false)
-	sess.Save()
+func adminLogout(c fiber.Ctx) error {
+	sess := session.FromContext(c)
+	// 重置会话，清除所有数据并生成新的会话ID
+	if err := sess.Reset(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "会话错误"})
+	}
 
 	log.Println("管理员登出成功")
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
 }
 
 // 修改管理员密码
-func changePassword(c *fiber.Ctx) error {
+func changePassword(c fiber.Ctx) error {
 	var passwordInput struct {
 		OldPassword string `json:"oldPassword"`
 		NewPassword string `json:"newPassword"`
 	}
 
-	if err := c.BodyParser(&passwordInput); err != nil {
+	if err := c.Bind().Body(&passwordInput); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "需要原密码和新密码字段"})
 	}
 
@@ -704,9 +710,11 @@ func changePassword(c *fiber.Ctx) error {
 	}
 
 	// 清除会话，强制重新登录，增强安全性
-	sess := sessionManager.Get(c)
-	sess.Set("authenticated", false)
-	sess.Save()
+	sess := session.FromContext(c)
+	// 重置会话，清除所有数据并生成新的会话ID
+	if err := sess.Reset(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "会话错误"})
+	}
 
 	log.Println("密码修改成功")
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true})
