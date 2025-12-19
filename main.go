@@ -185,6 +185,7 @@ func setupRouter() *fiber.App {
 	{
 		// 服务管理
 		adminAPI.Get("/services", getServices)
+		adminAPI.Get("/services/:id", getServiceById)
 		adminAPI.Post("/services", addService)
 		adminAPI.Put("/services/:id", updateService)
 		adminAPI.Delete("/services/:id", deleteService)
@@ -192,6 +193,7 @@ func setupRouter() *fiber.App {
 
 		// 分类管理
 		adminAPI.Get("/categories", getCategories)
+		adminAPI.Get("/categories/:id", getCategoryById)
 		adminAPI.Post("/categories", addCategory)
 		adminAPI.Put("/categories/:id", updateCategory)
 		adminAPI.Delete("/categories/:id", deleteCategory)
@@ -273,13 +275,42 @@ func getCategories(c *fiber.Ctx) error {
 
 	result := make([]map[string]interface{}, 0)
 	for _, category := range categories {
+		// 计算分类下的服务数量
+		var serviceCount int64
+		db.Model(&models.Service{}).Where("category_id = ?", category.ID).Count(&serviceCount)
+
 		result = append(result, map[string]interface{}{
-			"id":   category.ID,
-			"name": category.Name,
+			"id":            category.ID,
+			"name":          category.Name,
+			"service_count": serviceCount,
+			"created_at":    category.CreatedAt.Format("2006-01-02 15:04:05"),
+			"updated_at":    category.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
 	return c.JSON(result)
+}
+
+// 根据ID获取分类详情
+func getCategoryById(c *fiber.Ctx) error {
+	categoryID := c.Params("id")
+
+	var category models.Category
+	if err := db.First(&category, categoryID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "分类不存在"})
+	}
+
+	// 计算分类下的服务数量
+	var serviceCount int64
+	db.Model(&models.Service{}).Where("category_id = ?", category.ID).Count(&serviceCount)
+
+	return c.JSON(map[string]interface{}{
+		"id":            category.ID,
+		"name":          category.Name,
+		"service_count": serviceCount,
+		"created_at":    category.CreatedAt.Format("2006-01-02 15:04:05"),
+		"updated_at":    category.UpdatedAt.Format("2006-01-02 15:04:05"),
+	})
 }
 
 // 获取所有服务（管理用）
@@ -306,6 +337,33 @@ func getServices(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(result)
+}
+
+// 根据ID获取服务详情
+func getServiceById(c *fiber.Ctx) error {
+	serviceID := c.Params("id")
+
+	var service models.Service
+	if err := db.Preload("Category").First(&service, serviceID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "服务不存在"})
+	}
+
+	categoryName := "未分类"
+	if service.Category.ID > 0 {
+		categoryName = service.Category.Name
+	}
+
+	return c.JSON(map[string]interface{}{
+		"id":          service.ID,
+		"name":        service.Name,
+		"ip_url":      service.IPURL,
+		"domain_url":  service.DomainURL,
+		"category_id": service.CategoryID,
+		"category":    categoryName,
+		"sort_order":  service.SortOrder,
+		"description": service.Description,
+		"icon":        service.Icon,
+	})
 }
 
 // 添加新服务
@@ -609,11 +667,11 @@ func updateCategory(c *fiber.Ctx) error {
 
 	// 返回完整的分类对象
 	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
-		"id":           category.ID,
-		"name":         category.Name,
+		"id":            category.ID,
+		"name":          category.Name,
 		"service_count": serviceCount,
-		"created_at":   category.CreatedAt.Format("2006-01-02 15:04:05"),
-		"updated_at":   category.UpdatedAt.Format("2006-01-02 15:04:05"),
+		"created_at":    category.CreatedAt.Format("2006-01-02 15:04:05"),
+		"updated_at":    category.UpdatedAt.Format("2006-01-02 15:04:05"),
 	})
 }
 
